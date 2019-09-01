@@ -59,6 +59,12 @@ lantiq_setup_dsl()
 	local annex="a"
 
 	case "$board" in
+	dlink,dwr-966)
+		return
+		;;
+	esac
+
+	case "$board" in
 	arcadyan,vgv7510kw22-brn|\
 	arcadyan,vgv7510kw22-nor|\
 	avm,fritz3370-rev2-hynix|\
@@ -131,6 +137,9 @@ lantiq_setup_macs()
 	buffalo,wbmr-300hpd)
 		lan_mac=$(mtd_get_mac_ascii u-boot-env ethaddr)
 		wan_mac="$lan_mac"
+		;;
+	dlink,dwr-966)
+		lan_mac=$(mtd_get_mac_ascii ubootconfigA ethaddr)
 		;;
 	netgear,dm200)
 		lan_mac=$(mtd_get_mac_binary ART 0x0)

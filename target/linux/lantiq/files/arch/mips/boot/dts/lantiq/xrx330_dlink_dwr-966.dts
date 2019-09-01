@@ -1,0 +1,320 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+/dts-v1/;
+
+#include "xrx330.dtsi"
+
+#include <dt-bindings/input/input.h>
+
+/ {
+	compatible = "dlink,dwr-966", "lantiq,xway", "lantiq,grx390";
+	model = "D-Link DWR-966";
+
+	chosen {
+		bootargs = "console=ttyLTQ0,115200";
+	};
+
+	memory@0 {
+		reg = <0x0 0x8000000>;
+	};
+
+	aliases {
+		led-boot = &led_power_error;
+		led-failsafe = &led_power_error;
+		led-running = &led_power;
+		led-upgrade = &led_power_error;
+
+		led-internet = &led_internet;
+		led-wifi = &led_wifi_2g;
+	};
+
+	keys {
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>;
+
+		reset {
+			label = "reset";
+			gpios = <&gpio 9 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+		};
+
+		wps {
+			label = "wps";
+			gpios = <&gpio 11 GPIO_ACTIVE_HIGH>;
+			linux,code = <KEY_WPS_BUTTON>;
+		};
+
+		ant {
+			label = "ant";
+			gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
+			linux,code = <BTN_0>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		wps {
+			label = "green:wps";
+			gpios = <&stp 23 GPIO_ACTIVE_LOW>;
+		};
+
+		led_internet: internet {
+			label = "green:internet";
+			gpios = <&stp 22 GPIO_ACTIVE_LOW>;
+		};
+
+		ant_ind {
+			label = "green:ant_ind";
+			gpios = <&stp 20 GPIO_ACTIVE_LOW>;
+		};
+
+		3g_link {
+			label = "green:3g_link";
+			gpios = <&stp 15 GPIO_ACTIVE_LOW>;
+		};
+
+		wifi_5g {
+			label = "green:wifi_5g";
+			gpios = <&stp 14 GPIO_ACTIVE_LOW>;
+		};
+
+		led_wifi_2g: wifi_2g {
+			label = "green:wifi_2g";
+			gpios = <&stp 13 GPIO_ACTIVE_LOW>;
+		};
+
+		4g_link {
+			label = "green:4g_link";
+			gpios = <&stp 7 GPIO_ACTIVE_LOW>;
+		};
+
+		2g_link {
+			label = "blue:2g_link";
+			gpios = <&stp 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		led_power_error: power_error {
+			label = "red:power_error";
+			gpios = <&stp 1 GPIO_ACTIVE_LOW>;
+		};
+
+		led_power: power {
+			label = "green:power";
+			gpios = <&stp 0 GPIO_ACTIVE_LOW>;
+		};
+
+		rssi_1 {
+			label = "green:rssi_1";
+			gpios = <&gpio 18 GPIO_ACTIVE_LOW>;
+		};
+
+		rssi_2 {
+			label = "green:rssi_2";
+			gpios = <&gpio 17 GPIO_ACTIVE_LOW>;
+		};
+
+		rssi_3 {
+			label = "green:rssi_3";
+			gpios = <&gpio 16 GPIO_ACTIVE_LOW>;
+		};
+
+		rssi_4 {
+			label = "green:rssi_4";
+			gpios = <&gpio 15 GPIO_ACTIVE_LOW>;
+		};
+
+		rssi_5 {
+			label = "green:rssi_5";
+			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
+		};
+	};
+};
+
+&localbus {
+	nand@1 {
+		compatible = "lantiq,nand-xway";
+		lantiq,cs = <1>;
+		bank-width = <2>;
+		reg = <1 0x0 0x2000000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "uboot";
+				reg = <0x0 0x100000>;
+				read-only;
+			};
+
+			partition@100000 {
+				label = "ubootconfigA";
+				reg = <0x100000 0x40000>;
+				read-only;
+			};
+
+			partition@140000 {
+				label = "ubootconfigB";
+				reg = <0x140000 0x40000>;
+				read-only;
+			};
+
+			partition@180000 {
+				label = "gphyfirmware";
+				read-only;
+				reg = <0x180000 0x40000>;
+			};
+
+			partition@1c0000 {
+				label = "ubi";
+				reg = <0x1c0000 0x7c00000>;
+			};
+
+			partition@7dc0000 {
+				label = "calibration";
+				reg = <0x7dc0000 0x100000>;
+				read-only;
+			};
+
+			partition@7ec0000 {
+				label = "factory";
+				reg = <0x7ec0000 0x100000>;
+				read-only;
+			};
+
+			partition@7fc0000 {
+				label = "res";
+				reg = <0x7fc0000 0x40000>;
+				read-only;
+			};
+		};
+	};
+};
+
+&eth0 {
+	interface@0 {
+		compatible = "lantiq,xrx200-pdi";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0>;
+		mac-address = [ 00 11 22 33 44 55 ];
+		lantiq,switch;
+
+		ethernet@1 {
+			compatible = "lantiq,xrx200-pdi-port";
+			reg = <1>;
+			phy-mode = "gmii";
+			phy-handle = <&phy1>;
+		};
+
+		ethernet@2 {
+			compatible = "lantiq,xrx200-pdi-port";
+			reg = <2>;
+			phy-mode = "gmii";
+			phy-handle = <&phy2>;
+		};
+
+		ethernet@3 {
+			compatible = "lantiq,xrx200-pdi-port";
+			reg = <3>;
+			phy-mode = "gmii";
+			phy-handle = <&phy3>;
+		};
+
+		ethernet@4 {
+			compatible = "lantiq,xrx200-pdi-port";
+			reg = <4>;
+			phy-mode = "gmii";
+			phy-handle = <&phy4>;
+		};
+	};
+
+	mdio@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "lantiq,xrx200-mdio";
+		reg = <0>;
+
+		phy1: ethernet-phy@1 {
+			reg = <0x1>;
+		};
+
+		phy2: ethernet-phy@2 {
+			reg = <0x2>;
+		};
+
+		phy3: ethernet-phy@3 {
+			reg = <0x3>;
+		};
+
+		phy4: ethernet-phy@4 {
+			reg = <0x4>;
+		};
+	};
+};
+
+&gpio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&state_default>;
+
+	state_default: pinmux {
+		mdio {
+			lantiq,groups = "mdio";
+			lantiq,function = "mdio";
+		};
+
+		nand_out {
+			lantiq,groups = "nand cle",
+					"nand ale",
+					"nand rd",
+					"nand d1",
+					"nand d0",
+					"nand d2",
+					"nand d7",
+					"nand d6",
+					"nand d5",
+					"nand d4",
+					"nand d3",
+					"nand wr",
+					"nand wp",
+					"nand se";
+			lantiq,function = "ebu";
+			lantiq,output = <1>;
+			lantiq,open-drain = <0>;
+			lantiq,pull = <0>;
+		};
+
+		nand {
+			lantiq,groups = "nand cs1", "nand rdy";
+			lantiq,function = "ebu";
+			lantiq,pull = <0>;
+		};
+	};
+};
+
+&stp {
+	status = "okay";
+	lantiq,phy1 = <0x2>;
+	lantiq,phy2 = <0x2>;
+	lantiq,phy3 = <0x2>;
+	lantiq,phy4 = <0x2>;
+};
+
+&usb_phy0 {
+	status = "okay";
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&usb_phy1 {
+	status = "okay";
+};
+
+&usb1 {
+	status = "okay";
+};
