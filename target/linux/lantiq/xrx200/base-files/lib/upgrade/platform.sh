@@ -16,6 +16,7 @@ platform_do_upgrade() {
 	avm,fritz7412|\
 	avm,fritz7430|\
 	bt,homehub-v5a|\
+	dlink,dwr-966|\
 	zyxel,p-2812hnu-f1|\
 	zyxel,p-2812hnu-f3)
 		nand_do_upgrade $1
