@@ -383,9 +383,15 @@
 			reg = <0xe103100 0xf00>;
 		};
 
-		dma0: dma@e104100 {
-			compatible = "lantiq,dma-xway";
+		dma0: dma-controller@e104100 {
+			compatible = "lantiq,xrx200-dma";
 			reg = <0xe104100 0x800>;
+			resets = <&reset0 5 5>;
+			reset-names = "ctrl";
+			#dma-cells = <3>;
+			interrupt-parent = <&icu0>;
+			interrupts = <72 73 74 75 76 77 78 79 80 81 82 83 97 98 99 100 101 70 88 93 136 137 138 139 140 141 142 143>;
+			intel,dma-poll-cnt = <4>;
 		};
 
 		ebu0: ebu@e105300 {
@@ -484,8 +490,8 @@
 			compatible = "lantiq,xrx200-net";
 			reg = <0xe10b308 0x30>; /* pmac */
 			interrupt-parent = <&icu0>;
-			interrupts = <73>, <72>;
-			interrupt-names = "tx", "rx";
+			dmas = <&dma0 0 0 8>, <&dma0 1 0 8>;
+			dma-names = "rx", "tx";
 			resets = <&reset0 21 16>, <&reset0 8 8>, <&reset0 3 3>;
 			reset-names = "switch", "ppe", "ppe_dsp";
 			#address-cells = <1>;

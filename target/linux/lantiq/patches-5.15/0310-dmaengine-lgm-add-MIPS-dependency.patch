@@ -1,0 +1,26 @@
+From 2346e71dc4939697affca8116fc8aed8e833d190 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Mon, 4 Jul 2022 23:05:14 +0200
+Subject: [PATCH 2/4] dmaengine: lgm: add MIPS dependency
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/dma/lgm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma/lgm/Kconfig b/drivers/dma/lgm/Kconfig
+index 9194330ed0f2..b8d4758a8f59 100644
+--- a/drivers/dma/lgm/Kconfig
++++ b/drivers/dma/lgm/Kconfig
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ config INTEL_LDMA
+ 	bool "Lightning Mountain centralized DMA controllers"
+-	depends on X86 || COMPILE_TEST
++	depends on MIPS || X86 || COMPILE_TEST
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
+ 	help
+-- 
+2.30.2
+
