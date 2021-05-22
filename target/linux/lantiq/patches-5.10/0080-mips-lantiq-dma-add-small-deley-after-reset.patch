@@ -1,0 +1,37 @@
+From 6c11db27951c4a5519a9e398a19151e62db6c810 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 19 Jun 2021 13:38:12 +0200
+Subject: [PATCH] mips: lantiq: dma: add small deley after reset
+
+Reading the DMA registers after the reset sometimes causes
+Data Bus Error. Adding a small delay fixes this problem.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/mips/lantiq/xway/dma.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
+index 293a277a65d4..2cee9f5ae74e 100644
+--- a/arch/mips/lantiq/xway/dma.c
++++ b/arch/mips/lantiq/xway/dma.c
+@@ -11,6 +11,7 @@
+ #include <linux/export.h>
+ #include <linux/spinlock.h>
+ #include <linux/clk.h>
++#include <linux/delay.h>
+ #include <linux/err.h>
+ 
+ #include <lantiq_soc.h>
+@@ -228,6 +229,8 @@ ltq_dma_init(struct platform_device *pdev)
+ 	clk_enable(clk);
+ 	ltq_dma_w32_mask(0, DMA_RESET, LTQ_DMA_CTRL);
+ 
++	usleep_range(1, 10);
++
+ 	/* disable all interrupts */
+ 	ltq_dma_w32(0, LTQ_DMA_IRNEN);
+ 
+-- 
+2.30.2
+

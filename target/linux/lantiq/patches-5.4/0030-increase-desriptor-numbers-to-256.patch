@@ -1,0 +1,26 @@
+From ab8dffc9d58fdccc2f10d593b32d5b7052d02479 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <A.Bajkowski@stud.elka.pw.edu.pl>
+Date: Sat, 22 May 2021 19:15:14 +0200
+Subject: [PATCH 2/3] increase desriptor numbers to 256
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/mips/include/asm/mach-lantiq/xway/xway_dma.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/mips/include/asm/mach-lantiq/xway/xway_dma.h b/arch/mips/include/asm/mach-lantiq/xway/xway_dma.h
+index 8218a1356bd8..b85443c3025d 100644
+--- a/arch/mips/include/asm/mach-lantiq/xway/xway_dma.h
++++ b/arch/mips/include/asm/mach-lantiq/xway/xway_dma.h
+@@ -8,7 +8,7 @@
+ #define LTQ_DMA_H__
+ 
+ #define LTQ_DESC_SIZE		0x08	/* each descriptor is 64bit */
+-#define LTQ_DESC_NUM		0x40	/* 64 descriptors / channel */
++#define LTQ_DESC_NUM		256	/* 256 descriptors / channel */
+ 
+ #define LTQ_DMA_OWN		BIT(31) /* owner bit */
+ #define LTQ_DMA_C		BIT(30) /* complete bit */
+-- 
+2.30.2
+

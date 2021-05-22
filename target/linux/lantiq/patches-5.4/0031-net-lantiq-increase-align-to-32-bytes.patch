@@ -1,0 +1,28 @@
+From e63c2dc0428bd93861c7b1d2a372a73db8918dfb Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <A.Bajkowski@stud.elka.pw.edu.pl>
+Date: Sun, 16 May 2021 15:52:06 +0200
+Subject: [PATCH 3/3] net: lantiq: increase align to 32 bytes
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/ethernet/lantiq_xrx200.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/lantiq_xrx200.c b/drivers/net/ethernet/lantiq_xrx200.c
+index 0c51a2226200..0f6ce425b405 100644
+--- a/drivers/net/ethernet/lantiq_xrx200.c
++++ b/drivers/net/ethernet/lantiq_xrx200.c
+@@ -313,8 +313,8 @@ static netdev_tx_t xrx200_start_xmit(struct sk_buff *skb,
+ 	if (unlikely(dma_mapping_error(priv->dev, mapping)))
+ 		goto err_drop;
+ 
+-	/* dma needs to start on a 16 byte aligned address */
+-	byte_offset = mapping % 16;
++	/* dma needs to start on a 32 byte aligned address */
++	byte_offset = mapping % 32;
+ 
+ 	desc->addr = mapping - byte_offset;
+ 	/* Make sure the address is written before we give it to HW */
+-- 
+2.30.2
+

@@ -1,0 +1,27 @@
+From eca09694d5dbe37b395e036a34b53e0ad449803e Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <A.Bajkowski@stud.elka.pw.edu.pl>
+Date: Tue, 8 Jun 2021 19:30:30 +0200
+Subject: [PATCH 2/2] net: lantiq: test on xrx330
+
+Signed-off-by: Aleksander Jan Bajkowski <A.Bajkowski@stud.elka.pw.edu.pl>
+---
+ drivers/net/ethernet/lantiq_xrx200.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/lantiq_xrx200.c b/drivers/net/ethernet/lantiq_xrx200.c
+index 0e10d8aeffe1..b10a32c0fa8f 100644
+--- a/drivers/net/ethernet/lantiq_xrx200.c
++++ b/drivers/net/ethernet/lantiq_xrx200.c
+@@ -353,7 +353,9 @@ static irqreturn_t xrx200_dma_irq(int irq, void *ptr)
+ 
+ 	if (napi_schedule_prep(&ch->napi)) {
+ 		ltq_dma_disable_irq(&ch->dma);
++		ltq_dma_ack_irq(&ch->dma);
+ 		__napi_schedule(&ch->napi);
++		return IRQ_HANDLED;
+ 	}
+ 
+ 	ltq_dma_ack_irq(&ch->dma);
+-- 
+2.30.2
+
