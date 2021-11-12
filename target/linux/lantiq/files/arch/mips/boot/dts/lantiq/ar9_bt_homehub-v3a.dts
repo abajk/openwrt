@@ -115,10 +115,6 @@
 	};
 };
 
-&gsw {
-	phy-mode = "rgmii";
-};
-
 &localbus {
 	flash@1 {		  /* NAND Flash: Samsung K9F5608U0D-JIB0 32MB */
 		compatible = "lantiq,nand-xway";

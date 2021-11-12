@@ -118,10 +118,6 @@
 	};
 };
 
-&gsw {
-	phy-mode = "mii";
-};
-
 &pci0 {
 	status = "okay";
 

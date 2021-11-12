@@ -133,12 +133,6 @@
 	};
 };
 
-&gsw {
-	phy-mode = "rgmii";
-	nvmem-cells = <&macaddr_boardconfig_10024>;
-	nvmem-cell-names = "mac-address";
-};
-
 &pci0 {
 	status = "okay";
 };

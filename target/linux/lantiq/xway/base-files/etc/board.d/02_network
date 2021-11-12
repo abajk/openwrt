@@ -49,6 +49,12 @@ lantiq_setup_interfaces()
 		ucidef_add_switch "switch0" \
 			"0:lan" "1:lan" "2:lan" "3:lan" "5t@eth0"
 		;;
+	avm,fritz7312)
+		ucidef_set_interface_lan "lan"
+		;;
+	avm,fritz7320)
+		ucidef_set_interface_lan "lan1 lan2"
+		;;
 	*)
 		ucidef_set_interface_lan 'eth0'
 		;;

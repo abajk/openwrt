@@ -96,22 +96,10 @@
 	};
 };
 
-&gsw {
-	phy-mode = "mii";
-	phy-handle = <&phy0>;
+&eth0 {
 	nvmem-cells = <&macaddr_ath9k_cal_a91>;
 	nvmem-cell-names = "mac-address";
 	mac-address-increment = <(-2)>;
-
-	mdio-bus {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		phy0: ethernet-phy@0 {
-			reg = <0>;
-			reset-gpios = <&gpio 36 GPIO_ACTIVE_LOW>;
-		};
-	};
 };
 
 &gpio {
@@ -119,8 +107,13 @@
 	pinctrl-0 = <&state_default>;
 
 	state_default: pinmux {
+		phy-clk {
+			lantiq,groups = "clkout2";
+			lantiq,output = <1>;
+			lantiq,open-drain;
+		};
 		phy-rst {
-			lantiq,pins = "io36";
+			lantiq,pins = "io34", "io36";
 			lantiq,pull = <0>;
 			lantiq,open-drain;
 			lantiq,output = <1>;
@@ -137,6 +130,34 @@
 			lantiq,open-drain = <0>;
 			lantiq,output = <1>;
 		};
+	};
+};
+
+&tantos_mdio {
+	phy0: ethernet-phy@0 {
+		reg = <0x0>;
+		reset-gpios = <&gpio 36 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <10000>;
+	};
+	phy1: ethernet-phy@1 {
+		reg = <0x1>;
+		reset-gpios = <&gpio 34 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <10000>;
+	};
+};
+
+&tantos_ports {
+	port@0 {
+		reg = <0>;
+		label = "lan1";
+		phy-mode = "rgmii";
+		phy-handle = <&phy0>;
+	};
+	port@1 {
+		reg = <1>;
+		label = "lan2";
+		phy-mode = "rmii";
+		phy-handle = <&phy1>;
 	};
 };
 

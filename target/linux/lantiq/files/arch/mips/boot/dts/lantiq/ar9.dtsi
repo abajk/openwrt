@@ -379,16 +379,57 @@
 			interrupts = <63>;
 		};
 
-		gsw: etop@e180000 {
-			compatible = "lantiq,etop-xway";
-			reg = <0xe180000 0x40000
-				0xe108000 0x200>;
-			interrupt-parent = <&icu0>;
-			interrupts = <73 72>;
+		tantos: switch@e108000 {
+			compatible = "lantiq,arx100-tantos";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = < 0xe108000 0x8c /* switch */
+				0xe1080c4 0x08   /* rmon */
+				0xe1080cc 0x08   /* mdio */
+				>;
 			pinctrl-0 = <&mdio_pins>;
 			pinctrl-names = "default";
-			lantiq,tx-burst-length = <8>;
-			lantiq,rx-burst-length = <8>;
+
+			dsa,member = <0 0>;
+
+			tantos_ports: ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@2 {
+					reg = <0x2>;
+					phy-mode = "internal";
+					ethernet = <&eth0>;
+
+					fixed-link {
+						speed = <1000>;
+						full-duplex;
+					};
+				};
+			};
+
+			tantos_mdio: mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "lantiq,arx100-mdio";
+			};
+		};
+
+		eth0: eth@e10808c {
+			compatible = "lantiq,arx100-net";
+			reg = <0xe10808c 0x20>; /* pmac */
+			interrupt-parent = <&icu0>;
+			interrupts = <73>, <72>;
+			interrupt-names = "tx", "rx";
+			resets = <&reset 21 16>;
+			reset-names = "switch";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			fixed-link {
+				speed = <1000>;
+				full-duplex;
+			};
 		};
 
 		ppe@e234000 {

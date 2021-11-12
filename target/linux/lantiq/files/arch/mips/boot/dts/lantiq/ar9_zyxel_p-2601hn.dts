@@ -120,10 +120,6 @@
 	};
 };
 
-&gsw {
-	phy-mode = "rmii";
-};
-
 &localbus {
 	flash@0 {
 		compatible = "lantiq,nor";
