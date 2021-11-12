@@ -123,13 +123,6 @@
 	};
 };
 
-&gsw {
-	phy-mode = "mii";
-
-	nvmem-cells = <&macaddr_uboot_ethaddr 0>;
-	nvmem-cell-names = "mac-address";
-};
-
 &ppe {
 	nvmem-cells = <&macaddr_uboot_ethaddr 1>;
 	nvmem-cell-names = "mac-address";
