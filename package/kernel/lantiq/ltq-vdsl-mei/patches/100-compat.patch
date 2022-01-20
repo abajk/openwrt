@@ -127,39 +127,6 @@
     return 0;
  #endif      /* CONFIG_DEVFS_FS */
  }
-@@ -2563,21 +2595,32 @@ static int MEI_InitModuleBasics(void)
- }
- 
- #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
-+
-+#define PMU_DFE         BIT(9)
-+
- static int MEI_SysClkEnable(struct clk *clk)
- {
-+#if 0
-    if (IS_ERR(clk))
-       return -1;
-    clk_enable(clk);
-+#else
-+   ltq_pmu_enable(PMU_DFE);
-+#endif
- 
-    return 0;
- }
- 
- static int MEI_SysClkDisable(struct clk *clk)
- {
-+#if 0
-    if (IS_ERR(clk))
-       return -1;
-    clk_disable(clk);
-    clk_put(clk);
-+#else
-+   ltq_pmu_disable(PMU_DFE);
-+#endif
- 
-    return 0;
- }
 @@ -2905,11 +2948,15 @@ IFX_int32_t MEI_IoctlInitDevice(
              pMeiDev->eModePoll = e_MEI_DEV_ACCESS_MODE_IRQ;
              pMeiDev->intMask   = ME_ARC2ME_INTERRUPT_UNMASK_ALL;

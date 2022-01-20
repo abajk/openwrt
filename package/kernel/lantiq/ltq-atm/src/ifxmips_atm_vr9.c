@@ -51,13 +51,6 @@
 
 #include <lantiq_soc.h>
 
-#define IFX_PMU_MODULE_PPE_SLL01  BIT(19)
-#define IFX_PMU_MODULE_PPE_TC     BIT(21)
-#define IFX_PMU_MODULE_PPE_EMA    BIT(22)
-#define IFX_PMU_MODULE_PPE_QSB    BIT(18)
-#define IFX_PMU_MODULE_AHBS       BIT(13)
-#define IFX_PMU_MODULE_DSL_DFE    BIT(9)
-
 static inline void vr9_reset_ppe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -138,12 +131,7 @@ static void vr9_init(struct platform_device *pdev)
 	unsigned int i;
 
 	/* setup pmu */
-	ltq_pmu_enable(IFX_PMU_MODULE_PPE_SLL01 |
-		IFX_PMU_MODULE_PPE_TC |
-		IFX_PMU_MODULE_PPE_EMA |
-		IFX_PMU_MODULE_PPE_QSB |
-		IFX_PMU_MODULE_AHBS |
-		IFX_PMU_MODULE_DSL_DFE);
+	clk_enable(clk);
 
 	vr9_reset_ppe(pdev);
 
