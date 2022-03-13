@@ -1,0 +1,30 @@
+From b3aa1f2c32b31c6f900b82b7659ed3e9238494e9 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Tue, 28 Dec 2021 23:44:02 +0100
+Subject: [PATCH] net: lantiq_etop: add statistics counters
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/ethernet/lantiq_etop.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -211,6 +211,8 @@ ltq_etop_hw_receive(struct ltq_etop_chan
+ 	skb->dev = ch->netdev;
+ 	skb->protocol = eth_type_trans(skb, ch->netdev);
+ 	netif_receive_skb(skb);
++	ch->netdev->stats.rx_packets++;
++	ch->netdev->stats.rx_bytes += len;
+ }
+ 
+ static int
+@@ -252,6 +254,8 @@ ltq_etop_poll_tx(struct napi_struct *nap
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	while ((ch->dma.desc_base[ch->tx_free].ctl &
+ 			(LTQ_DMA_OWN | LTQ_DMA_C)) == LTQ_DMA_C) {
++		ch->netdev->stats.tx_packets++;
++		ch->netdev->stats.tx_bytes += ch->skb[ch->tx_free]->len;
+ 		dev_kfree_skb_any(ch->skb[ch->tx_free]);
+ 		ch->skb[ch->tx_free] = NULL;
+ 		memset(&ch->dma.desc_base[ch->tx_free], 0,
