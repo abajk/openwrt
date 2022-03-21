@@ -22,3 +22,71 @@
     if (pVirtAddr == IFX_NULL)
     {
        IFXOS_PRN_USR_ERR_NL( IFXOS, IFXOS_PRN_LEVEL_ERR,
+--- a/src/linux/ifxos_linux_socket_drv.c
++++ b/src/linux/ifxos_linux_socket_drv.c
+@@ -166,7 +166,9 @@ IFX_int_t IFXOS_SocketRecvFrom(
+ {
+    struct msghdr msg;
+    struct iovec iov;
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    mm_segment_t old_fs;
++#endif
+    int ret;
+ 
+    IFXOS_RETURN_IF_POINTER_NULL(pBuffer, IFX_ERROR);
+@@ -188,17 +190,22 @@ IFX_int_t IFXOS_SocketRecvFrom(
+    iov_iter_init(&msg.msg_iter, READ, &iov, 1, bufSize_byte);
+ #endif
+ 
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    /* Modify address limitation which is used if user space is calling
+       kernel space, otherwise sock_recvmsg() will fail.*/
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
++#endif
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(4,7,0)
+    ret = sock_recvmsg (socFd, &msg, bufSize_byte, 0);
+ #else
+    ret = sock_recvmsg (socFd, &msg, 0);
+ #endif
++
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    set_fs(old_fs);
++#endif
+ 
+    return ret;
+ }
+@@ -230,7 +237,9 @@ IFX_int_t IFXOS_SocketSendTo(
+ {
+    struct msghdr msg;
+    struct iovec iov;
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    mm_segment_t old_fs;
++#endif
+    int ret;
+ 
+    IFXOS_RETURN_IF_POINTER_NULL(pBuffer, IFX_ERROR);
+@@ -252,17 +261,22 @@ IFX_int_t IFXOS_SocketSendTo(
+    iov_iter_init(&msg.msg_iter, WRITE, &iov, 1, bufSize_byte);
+ #endif
+ 
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    /* Modify address limitation which is used if user space is calling
+       kernel space, otherwise sock_sendmsg() will fail.*/
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
++#endif
+ 
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(3,19,0)
+    ret = sock_sendmsg(socFd, &msg, bufSize_byte);
+ #else
+    ret = sock_sendmsg(socFd, &msg);
+ #endif
++
++#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,11,0))
+    set_fs(old_fs);
++#endif
+ 
+    return ret;
+ }
