@@ -19,7 +19,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
   */
  
  #include <linux/kernel.h>
-@@ -20,11 +20,16 @@
+@@ -20,11 +20,15 @@
  #include <linux/mm.h>
  #include <linux/platform_device.h>
  #include <linux/ethtool.h>
@@ -29,7 +29,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  #include <linux/io.h>
  #include <linux/dma-mapping.h>
  #include <linux/module.h>
-+#include <linux/clk.h>
 +#include <linux/of_net.h>
 +#include <linux/of_irq.h>
 +#include <linux/of_platform.h>
@@ -152,7 +151,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	struct net_device *netdev;
  	struct napi_struct napi;
  	struct ltq_dma_channel dma;
-@@ -88,23 +140,36 @@ struct ltq_etop_chan {
+@@ -88,23 +140,33 @@ struct ltq_etop_chan {
  struct ltq_etop_priv {
  	struct net_device *netdev;
  	struct platform_device *pdev;
@@ -175,10 +174,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 + 
 + 	spinlock_t lock;
 +
-+	struct clk *clk_ppe;
 +	struct clk *clk_switch;
-+	struct clk *clk_ephy;
-+	struct clk *clk_ephycgu;
  };
  
 +static int ltq_etop_mdio_wr(struct mii_bus *bus, int phy_addr,
