@@ -1,0 +1,40 @@
+From e8e156442a3b8eeb73a55fb9b25cc3fc8225bb31 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Wed, 27 Apr 2022 21:17:50 +0200
+Subject: [PATCH] allow to align functions on MIPS
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ Makefile          | 2 +-
+ lib/Kconfig.debug | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index c3ec1ea42379..a398997bd3bc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -932,7 +932,7 @@ export CC_FLAGS_CFI
+ endif
+ 
+ ifdef CONFIG_DEBUG_FORCE_FUNCTION_ALIGN_64B
+-KBUILD_CFLAGS += -falign-functions=64
++KBUILD_CFLAGS += -falign-functions=32
+ endif
+ 
+ # arch Makefile may override CC so keep this after arch Makefile is included
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 075cd25363ac..106d9e5a2df1 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -458,7 +458,7 @@ config SECTION_MISMATCH_WARN_ONLY
+ 
+ config DEBUG_FORCE_FUNCTION_ALIGN_64B
+ 	bool "Force all function address 64B aligned"
+-	depends on EXPERT && (X86_64 || ARM64 || PPC32 || PPC64 || ARC)
++	depends on EXPERT && (X86_64 || ARM64 || MIPS || PPC32 || PPC64 || ARC)
+ 	help
+ 	  There are cases that a commit from one domain changes the function
+ 	  address alignment of other domains, and cause magic performance
+-- 
+2.30.2
+

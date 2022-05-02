@@ -1,0 +1,26 @@
+From b8d1d000a37045da52e9d06f46106647c3748f1b Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Tue, 4 Jan 2022 13:04:47 +0100
+Subject: [PATCH] net: lantiq_xrx200: convert to napi_consume_skb()
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/ethernet/lantiq_xrx200.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/lantiq_xrx200.c b/drivers/net/ethernet/lantiq_xrx200.c
+index 301b4b846be5..83e07404803f 100644
+--- a/drivers/net/ethernet/lantiq_xrx200.c
++++ b/drivers/net/ethernet/lantiq_xrx200.c
+@@ -321,7 +321,7 @@ static int xrx200_tx_housekeeping(struct napi_struct *napi, int budget)
+ 			pkts++;
+ 			bytes += skb->len;
+ 			ch->skb[ch->tx_free] = NULL;
+-			consume_skb(skb);
++			napi_consume_skb(skb, budget);
+ 			memset(&ch->dma.desc_base[ch->tx_free], 0,
+ 			       sizeof(struct ltq_dma_desc));
+ 			ch->tx_free++;
+-- 
+2.30.2
+

@@ -1,0 +1,25 @@
+From 08e92d4d9c19df78cd9a826ce8ed9e7bd761f8aa Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Wed, 27 Apr 2022 22:36:17 +0200
+Subject: [PATCH] fixup
+
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index e30cf02da8b8..2fb231aee6d1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -898,7 +898,7 @@ export CC_FLAGS_SCS
+ endif
+ 
+ ifdef CONFIG_DEBUG_FORCE_FUNCTION_ALIGN_32B
+-KBUILD_CFLAGS += -falign-functions=32
++KBUILD_CFLAGS += -falign-functions=4
+ endif
+ 
+ # arch Makefile may override CC so keep this after arch Makefile is included
+-- 
+2.30.2
+

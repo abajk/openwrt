@@ -1,0 +1,54 @@
+From 624dd83b4cfb01a9173a67d7e69b8d1177880330 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 4 Dec 2021 21:42:31 +0100
+Subject: [PATCH] MIPS: perf: use odd counters on 34Kc core
+
+Reading odd counters does not work. This patch fixes this issue.
+
+Tested on BT Home Hub 5A (MIPS 34Kc core).
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/mips/kernel/perf_event_mipsxx.c | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+index 1641d274fe37..d2253ba640c4 100644
+--- a/arch/mips/kernel/perf_event_mipsxx.c
++++ b/arch/mips/kernel/perf_event_mipsxx.c
+@@ -132,20 +132,6 @@ static DEFINE_RWLOCK(pmuint_rwlock);
+ 			 0 : cpu_vpe_id(&current_cpu_data))
+ #endif
+ 
+-/* Copied from op_model_mipsxx.c */
+-static unsigned int vpe_shift(void)
+-{
+-	if (num_possible_cpus() > 1)
+-		return 1;
+-
+-	return 0;
+-}
+-
+-static unsigned int counters_total_to_per_cpu(unsigned int counters)
+-{
+-	return counters >> vpe_shift();
+-}
+-
+ #else /* !CONFIG_MIPS_PERF_SHARED_TC_COUNTERS */
+ #define vpe_id()	0
+ 
+@@ -1900,11 +1886,6 @@ init_hw_perf_events(void)
+ 		return -ENODEV;
+ 	}
+ 
+-#ifdef CONFIG_MIPS_PERF_SHARED_TC_COUNTERS
+-	if (!cpu_has_mipsmt_pertccounters)
+-		counters = counters_total_to_per_cpu(counters);
+-#endif
+-
+ 	if (get_c0_perfcount_int)
+ 		irq = get_c0_perfcount_int();
+ 	else if (cp0_perfcount_irq >= 0)
+-- 
+2.30.2
+

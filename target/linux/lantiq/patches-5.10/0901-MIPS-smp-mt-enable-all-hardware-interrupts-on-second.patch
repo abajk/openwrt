@@ -1,0 +1,33 @@
+From 7884f0679cce861a51e0b07d1b81fc6d4bd62c03 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Fri, 4 Jun 2021 18:27:58 +0200
+Subject: [PATCH] MIPS: smp-mt: enable all hardware interrupts on second VPE
+
+This patch is needed to handle interrupts by the second VPE on Lantiq.
+It seems the Lantiq SoC is using all the hardware interrupt lines.
+Currently changing smp_affinity to the second VPE hangs interrupts.
+
+Tested on lantiq xRX200 and xRX330 (MIPS 34Kc core).
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/mips/kernel/smp-mt.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/mips/kernel/smp-mt.c b/arch/mips/kernel/smp-mt.c
+index 5f04a0141068..f21cd0eb1fa7 100644
+--- a/arch/mips/kernel/smp-mt.c
++++ b/arch/mips/kernel/smp-mt.c
+@@ -113,8 +113,7 @@ static void vsmp_init_secondary(void)
+ 					 STATUSF_IP4 | STATUSF_IP5 |
+ 					 STATUSF_IP6 | STATUSF_IP7);
+ 	else
+-		change_c0_status(ST0_IM, STATUSF_IP0 | STATUSF_IP1 |
+-					 STATUSF_IP6 | STATUSF_IP7);
++		set_c0_status(ST0_IM);
+ }
+ 
+ static void vsmp_smp_finish(void)
+-- 
+2.30.2
+
