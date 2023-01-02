@@ -1,0 +1,87 @@
+From 7163ce71a39277d9ffc273ebf0c60cd83ac600f6 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 6 Sep 2026 12:06:31 +0200
+Subject: [PATCH] arm: dts: xilinx: add ethernet LEDs on Paralella board
+
+TODO: Description
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/arm/boot/dts/xilinx/zynq-parallella.dts | 47 +++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/xilinx/zynq-parallella.dts b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+index 366af4fcf8d9..820e83e4fa88 100644
+--- a/arch/arm/boot/dts/xilinx/zynq-parallella.dts
++++ b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+@@ -11,6 +11,9 @@
+ /dts-v1/;
+ /include/ "zynq-7000.dtsi"
+ 
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/leds/common.h>
++
+ / {
+ 	model = "Adapteva Parallella board";
+ 	compatible = "adapteva,parallella", "xlnx,zynq-7000";
+@@ -29,6 +32,16 @@ chosen {
+ 		bootargs = "root=/dev/mmcblk0p2 rootfstype=ext4 rw rootwait";
+ 		stdout-path = "serial0:115200n8";
+ 	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++
++		led-status {
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_STATUS;
++			gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
++		};
++	};
+ };
+ 
+ &clkc {
+@@ -46,8 +59,38 @@ ethernet_phy: ethernet-phy@0 {
+ 		compatible = "ethernet-phy-id0141.0e90",
+ 		             "ethernet-phy-ieee802.3-c22";
+ 		reg = <0>;
+-		marvell,reg-init = <0x3 0x10 0xff00 0x1e>,
+-		                   <0x3 0x11 0xfff0 0xa>;
++		/*
++		 * Configure LEDs default behaviour:
++		 * - LED[0]: link/activity: On/blink (green)
++		 * - LED[1]: link is 100/1000Mbps: On (yellow)
++		 * - LED[2]: high impedance (floating)
++		 */
++		marvell,reg-init = <0x3 0x10 0xff00 0x91e>;
++
++		leds {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			led@0 {
++				reg = <0>;
++				active-low;
++				inactive-high-impedance;
++				color = <LED_COLOR_ID_GREEN>;
++				function = LED_FUNCTION_LAN;
++				linux,default-trigger = "netdev";
++				default-state = "keep";
++			};
++
++			led@1 {
++				reg = <1>;
++				active-low;
++				inactive-high-impedance;
++				color = <LED_COLOR_ID_YELLOW>;
++				function = LED_FUNCTION_LAN;
++				linux,default-trigger = "netdev";
++				default-state = "keep";
++			};
++		};
+ 	};
+ };
+ 
+-- 
+2.53.0
+
