@@ -1,0 +1,61 @@
+From 043b86d2c0dc9ba366b88da0dc2a318829dfa110 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 6 Sep 2026 12:06:31 +0200
+Subject: [PATCH] arm: dts: xilinx: parallella: Enable QSPI and NOR flash
+
+The Parallella board has a SPI-NOR flash connected to the QSPI controller.
+Enable the QSPI controller and add the corresponding SPI-NOR flash node
+to allow the system to access it.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/arm/boot/dts/xilinx/zynq-parallella.dts | 33 ++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/arch/arm/boot/dts/xilinx/zynq-parallella.dts b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+index 366af4fcf8d9..1903aa1cd83b 100644
+--- a/arch/arm/boot/dts/xilinx/zynq-parallella.dts
++++ b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+@@ -78,6 +78,39 @@ ldo2 {
+ 	};
+ };
+ 
++&qspi {
++	bootph-all;
++	status = "okay";
++	num-cs = <1>;
++
++	flash@0 {
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-tx-bus-width = <4>;
++		spi-rx-bus-width = <4>;
++		spi-max-frequency = <50000000>;
++		m25p,fast-read;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				label = "uboot";
++				reg = <0x0 0x4e0000>;
++				read-only;
++			};
++
++			partition@4e0000 {
++				label = "uboot-env";
++				reg = <0x4e0000 0x10000>;
++				read-only;
++			};
++		};
++	};
++};
++
+ &sdhci1 {
+ 	status = "okay";
+ };
+-- 
+2.53.0
+
