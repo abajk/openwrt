@@ -476,8 +476,9 @@ $(eval $(call KernelPackage,phy-qca83xx))
 define KernelPackage/phy-marvell
    SUBMENU:=$(NETWORK_DEVICES_MENU)
    TITLE:=Marvell Gigabit Ethernet PHY driver
-   KCONFIG:=CONFIG_MARVELL_PHY
-   DEPENDS:=+kmod-libphy
+   KCONFIG:=CONFIG_MARVELL_PHY \
+	CONFIG_HWMON=y
+   DEPENDS:=+kmod-libphy +kmod-hwmon-core
    FILES:=$(LINUX_DIR)/drivers/net/phy/marvell.ko
    AUTOLOAD:=$(call AutoLoad,18,marvell)
 endef
