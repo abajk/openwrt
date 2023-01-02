@@ -11,9 +11,6 @@ FAT32_BLOCKS=$(shell echo $$(($(CONFIG_TARGET_KERNEL_PARTSIZE)*1024*1024/$(FAT32
 define Build/zynq-sdcard
 	rm -f $@.boot
 	mkfs.fat $@.boot -C $(FAT32_BLOCKS)
-	mcopy -i $@.boot $(STAGING_DIR_IMAGE)/$(DEVICE_NAME)-boot.bin ::boot.bin
-	mcopy -i $@.boot $(STAGING_DIR_IMAGE)/$(DEVICE_NAME)-u-boot.img ::u-boot.img
-	mcopy -i $@.boot $(STAGING_DIR_IMAGE)/$(DEVICE_NAME)-uEnv.txt ::uEnv.txt
 	mcopy -i $@.boot $(IMAGE_KERNEL) ::fit.itb
 	./gen_zynq_sdcard_img.sh $@ \
 		$@.boot \
@@ -46,6 +43,13 @@ endef
 #################################################
 # Devices
 #################################################
+
+define Device/adapteva_zynq-parallella
+	$(call Device/FitImageGzip)
+	DEVICE_VENDOR := Adapteva
+	DEVICE_MODEL := Parallella-16
+endef
+TARGET_DEVICES += adapteva_zynq-parallella
 
 define Device/avnet_zynq-zed
 	$(call Device/FitImageGzip)
