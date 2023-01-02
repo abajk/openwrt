@@ -1,0 +1,56 @@
+From 20e739fa2645495b74175f010ac884836a5469a2 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 6 Sep 2026 12:06:31 +0200
+Subject: [PATCH] arm: dts: xilinx: add ethernet LEDs on Paralella board
+
+TODO: Description
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/arm/boot/dts/xilinx/zynq-parallella.dts | 23 ++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/arch/arm/boot/dts/xilinx/zynq-parallella.dts b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+index 366af4fcf8d9..ab1145bcf540 100644
+--- a/arch/arm/boot/dts/xilinx/zynq-parallella.dts
++++ b/arch/arm/boot/dts/xilinx/zynq-parallella.dts
+@@ -11,6 +11,8 @@
+ /dts-v1/;
+ /include/ "zynq-7000.dtsi"
+ 
++#include <dt-bindings/leds/common.h>
++
+ / {
+ 	model = "Adapteva Parallella board";
+ 	compatible = "adapteva,parallella", "xlnx,zynq-7000";
+@@ -48,6 +50,27 @@ ethernet_phy: ethernet-phy@0 {
+ 		reg = <0>;
+ 		marvell,reg-init = <0x3 0x10 0xff00 0x1e>,
+ 		                   <0x3 0x11 0xfff0 0xa>;
++
++		leds {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			led@0 {
++				reg = <0>;
++				inactive-high-impedance;
++				color = <LED_COLOR_ID_GREEN>;
++				function = LED_FUNCTION_LAN;
++				linux,default-trigger = "netdev";
++			};
++
++			led@1 {
++				reg = <1>;
++				inactive-high-impedance;
++				color = <LED_COLOR_ID_AMBER>;
++				function = LED_FUNCTION_LAN;
++				linux,default-trigger = "netdev";
++			};
++		};
+ 	};
+ };
+ 
+-- 
+2.53.0
+
