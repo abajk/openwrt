@@ -1,0 +1,33 @@
+From 1170768e9ea742ab375b9a6d7fe2e270ec9d46c4 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 11 Mar 2023 16:08:38 +0100
+Subject: [PATCH] net:dsa: lantiq_gswip: allow internal mode on cpu port
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/dsa/lantiq_gswip.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/dsa/lantiq_gswip.c b/drivers/net/dsa/lantiq_gswip.c
+index dbd4486a173f..961419aee222 100644
+--- a/drivers/net/dsa/lantiq_gswip.c
++++ b/drivers/net/dsa/lantiq_gswip.c
+@@ -1469,6 +1469,7 @@ static void gswip_xrx200_phylink_validate(struct dsa_switch *ds, int port,
+ 	case 2:
+ 	case 3:
+ 	case 4:
++	case 6:
+ 		if (state->interface != PHY_INTERFACE_MODE_INTERNAL)
+ 			goto unsupported;
+ 		break;
+@@ -1508,6 +1509,7 @@ static void gswip_xrx300_phylink_validate(struct dsa_switch *ds, int port,
+ 	case 2:
+ 	case 3:
+ 	case 4:
++	case 6:
+ 		if (state->interface != PHY_INTERFACE_MODE_INTERNAL)
+ 			goto unsupported;
+ 		break;
+-- 
+2.30.2
+
