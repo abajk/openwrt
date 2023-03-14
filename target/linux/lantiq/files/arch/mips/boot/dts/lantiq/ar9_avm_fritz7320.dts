@@ -97,7 +97,7 @@
 };
 
 &gsw {
-	phy-mode = "mii";
+	phy-mode = "rgmii";
 	phy-handle = <&phy0>;
 	nvmem-cells = <&macaddr_ath9k_cal_a91>;
 	nvmem-cell-names = "mac-address";
