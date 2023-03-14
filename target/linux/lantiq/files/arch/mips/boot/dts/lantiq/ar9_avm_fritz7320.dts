@@ -110,6 +110,8 @@
 		phy0: ethernet-phy@0 {
 			reg = <0>;
 			reset-gpios = <&gpio 36 GPIO_ACTIVE_LOW>;
+			interrupt-parent = <&icu0>;
+			interrupts = <39>;
 		};
 	};
 };
@@ -119,6 +121,17 @@
 	pinctrl-0 = <&state_default>;
 
 	state_default: pinmux {
+		phy-clk {
+			lantiq,groups = "clkout2";
+			lantiq,output = <1>;
+			lantiq,open-drain;
+		};
+		phy-intr {
+			lantiq,groups = "exin3";
+			lantiq,function = "exin";
+			lantiq,pull = <2>;
+			lantiq,output = <0>;
+		};
 		phy-rst {
 			lantiq,pins = "io36";
 			lantiq,pull = <0>;
