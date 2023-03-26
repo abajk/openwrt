@@ -1,7 +1,7 @@
 define Device/allnet_all0333cj
   DEVICE_VENDOR := Allnet
   DEVICE_MODEL := ALL0333CJ
-  IMAGE_SIZE := 3700k
+  IMAGE_SIZE := 3968k
   DEVICE_PACKAGES := kmod-ltq-adsl-ase kmod-ltq-adsl-ase-mei \
 	kmod-ltq-adsl-ase-fw-b kmod-ltq-atm-ase \
 	ltq-adsl-app ppp-mod-pppoe
