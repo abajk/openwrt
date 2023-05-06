@@ -27,8 +27,8 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  #endif /* _LTQ_XWAY_H__ */
 --- a/arch/mips/lantiq/xway/Makefile
 +++ b/arch/mips/lantiq/xway/Makefile
-@@ -8,3 +8,6 @@ obj-y += timer.o
- endif
+@@ -2,3 +2,6 @@
+ obj-y := prom.o sysctrl.o clk.o dma.o gptu.o dcdc.o
  
  obj-y += vmmc.o
 +
@@ -203,7 +203,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +early_param("ethaddr", setup_ethaddr);
 --- a/drivers/net/ethernet/lantiq_etop.c
 +++ b/drivers/net/ethernet/lantiq_etop.c
-@@ -757,7 +757,11 @@ ltq_etop_init(struct net_device *dev)
+@@ -763,7 +763,11 @@ ltq_etop_init(struct net_device *dev)
  	if (err)
  		goto err_hw;
  
