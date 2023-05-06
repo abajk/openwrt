@@ -1,0 +1,42 @@
+From 4a47c132c35c2192c016421bb8911a943b04eb39 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 6 May 2023 22:25:17 +0200
+Subject: [PATCH] fix build on 6.1
+
+Ref: https://github.com/torvalds/linux/commit/359745d78351c6f5442435f81549f0207ece28aa
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ src/drv_mei_cpe_linux.c             | 2 +-
+ src/drv_mei_cpe_linux_proc_config.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/drv_mei_cpe_linux.c b/src/drv_mei_cpe_linux.c
+index 8ac3500..4bd3faf 100644
+--- a/src/drv_mei_cpe_linux.c
++++ b/src/drv_mei_cpe_linux.c
+@@ -1863,7 +1863,7 @@ static int mei_seq_single_show(struct seq_file *s, void *v)
+ 
+ static int mei_proc_single_open(struct inode *inode, struct file *file)
+ {
+-   return single_open(file, mei_seq_single_show, PDE_DATA(inode));
++   return single_open(file, mei_seq_single_show, pde_data(inode));
+ }
+ 
+ static void mei_proc_entry_create(struct proc_dir_entry *parent_node,
+diff --git a/src/drv_mei_cpe_linux_proc_config.c b/src/drv_mei_cpe_linux_proc_config.c
+index 906371b..7aabdfc 100644
+--- a/src/drv_mei_cpe_linux_proc_config.c
++++ b/src/drv_mei_cpe_linux_proc_config.c
+@@ -1036,7 +1036,7 @@ static int mei_seq_single_show(struct seq_file *s, void *v)
+ 
+ static int mei_proc_single_open(struct inode *inode, struct file *file)
+ {
+-	return single_open(file, mei_seq_single_show, PDE_DATA(inode));
++	return single_open(file, mei_seq_single_show, pde_data(inode));
+ }
+ 
+ static struct file_operations proc_ops = {
+-- 
+2.30.2
+
