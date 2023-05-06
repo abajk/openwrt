@@ -32,7 +32,7 @@ Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
 +{
 +	struct dwc2_core_params *p = &hsotg->params;
 +
-+	p->otg_cap = DWC2_CAP_PARAM_NO_HNP_SRP_CAPABLE;
++	p->otg_caps.hnp_support = false;
 +}
 +
 +static void dwc2_set_ltq_ase_params(struct dwc2_hsotg *hsotg)
@@ -53,7 +53,7 @@ Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
 +{
 +	struct dwc2_core_params *p = &hsotg->params;
 +
-+	p->otg_cap = DWC2_CAP_PARAM_NO_HNP_SRP_CAPABLE;
++	p->otg_caps.hnp_support = false;
 +	p->host_rx_fifo_size = 288;
 +	p->host_nperio_tx_fifo_size = 128;
 +	p->host_perio_tx_fifo_size = 136;
