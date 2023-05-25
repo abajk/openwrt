@@ -1,0 +1,28 @@
+From 0c5e98b886a9c19304e60473d916a0be57607aef Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Thu, 25 May 2023 21:27:49 +0200
+Subject: [PATCH] fix build on 6.1
+
+Ref: https://github.com/torvalds/linux/commit/cead18552660702a4a46f58e65188fe5f36e9dfe
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ src/common/drv_dsl_cpe_os_linux.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/common/drv_dsl_cpe_os_linux.c b/src/common/drv_dsl_cpe_os_linux.c
+index bd87dc6..1d3bd34 100644
+--- a/src/common/drv_dsl_cpe_os_linux.c
++++ b/src/common/drv_dsl_cpe_os_linux.c
+@@ -685,7 +685,7 @@ DSL_DRV_STATIC DSL_int32_t DSL_DRV_KernelThreadStartup(
+    retVal = pThrCntrl->pThrFct(&pThrCntrl->thrParams);
+    pThrCntrl->thrParams.bRunning = 0;
+ 
+-   complete_and_exit(&pThrCntrl->thrCompletion, (long)retVal);
++   kthread_complete_and_exit(&pThrCntrl->thrCompletion, (long)retVal);
+ 
+    DSL_DEBUG( DSL_DBG_MSG,
+       (DSL_NULL, SYS_DBG_MSG"EXIT - Kernel Thread Startup <%s>" DSL_DRV_CRLF,
+-- 
+2.30.2
+
