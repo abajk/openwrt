@@ -186,7 +186,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  }
 --- /dev/null
 +++ b/arch/mips/pci/ifxmips_pci_common.h
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,52 @@
 +/******************************************************************************
 +**
 +** FILE NAME    : ifxmips_pci_common.h
@@ -211,7 +211,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +
 +#ifndef IFXMIPS_PCI_COMMON_H
 +#define IFXMIPS_PCI_COMMON_H
-+#include <linux/version.h>
 +/*!
 + \defgroup IFX_PCI_COM  IFX PCI/PCIe common parts for OS integration  
 + \brief  PCI/PCIe common parts
@@ -1336,7 +1335,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +
 --- /dev/null
 +++ b/arch/mips/pci/ifxmips_pcie.h
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,130 @@
 +/******************************************************************************
 +**
 +** FILE NAME    : ifxmips_pcie.h
@@ -1360,7 +1359,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +*******************************************************************************/
 +#ifndef IFXMIPS_PCIE_H
 +#define IFXMIPS_PCIE_H
-+#include <linux/version.h>
 +#include <linux/types.h>
 +#include <linux/pci.h>
 +#include <linux/interrupt.h>
@@ -2638,7 +2636,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +
 --- /dev/null
 +++ b/arch/mips/pci/ifxmips_pcie_pm.c
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,175 @@
 +/******************************************************************************
 +**
 +** FILE NAME    : ifxmips_pcie_pm.c
@@ -2679,7 +2677,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +#ifndef AUTOCONF_INCLUDED
 +#include <linux/config.h>
 +#endif /* AUTOCONF_INCLUDED */
-+#include <linux/version.h>
 +#include <linux/module.h>
 +#include <linux/types.h>
 +#include <linux/kernel.h>
@@ -4165,7 +4162,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +EXPORT_SYMBOL(pcibios_1st_host_bus_nr);
 --- /dev/null
 +++ b/arch/mips/pci/pcie-lantiq.h
-@@ -0,0 +1,1301 @@
+@@ -0,0 +1,1300 @@
 +/******************************************************************************
 +**
 +** FILE NAME    : ifxmips_pcie_reg.h
@@ -4189,7 +4186,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +*******************************************************************************/
 +#ifndef IFXMIPS_PCIE_REG_H
 +#define IFXMIPS_PCIE_REG_H
-+#include <linux/version.h>
 +#include <linux/types.h>
 +#include <linux/pci.h>
 +#include <linux/interrupt.h>
