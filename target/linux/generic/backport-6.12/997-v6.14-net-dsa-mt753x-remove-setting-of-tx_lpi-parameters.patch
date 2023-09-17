@@ -1,0 +1,41 @@
+From 22cedc609759edf414c519ae8242dd5461f4c4cd Mon Sep 17 00:00:00 2001
+From: "Russell King (Oracle)" <rmk+kernel@armlinux.org.uk>
+Date: Mon, 6 Jan 2025 11:58:48 +0000
+Subject: [PATCH] net: dsa: mt753x: remove setting of tx_lpi parameters
+
+dsa_user_get_eee() calls the DSA switch get_mac_eee() method followed
+by phylink_ethtool_get_eee(), which goes on to call
+phy_ethtool_get_eee(). This overwrites all members of the passed
+ethtool_keee, which means anything written by the DSA switch
+get_mac_eee() method will be discarded.
+
+Remove setting any members in mt753x_get_mac_eee().
+
+Signed-off-by: Russell King (Oracle) <rmk+kernel@armlinux.org.uk>
+Reviewed-by: Chester A. Unal <chester.a.unal@arinc9.com>
+Link: https://patch.msgid.link/E1tUlku-007Uyc-RP@rmk-PC.armlinux.org.uk
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ drivers/net/dsa/mt7530.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index 9605febd3573..4c78d049b9f4 100644
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -3088,12 +3088,6 @@ mt753x_setup(struct dsa_switch *ds)
+ static int mt753x_get_mac_eee(struct dsa_switch *ds, int port,
+ 			      struct ethtool_keee *e)
+ {
+-	struct mt7530_priv *priv = ds->priv;
+-	u32 eeecr = mt7530_read(priv, MT753X_PMEEECR_P(port));
+-
+-	e->tx_lpi_enabled = !(eeecr & LPI_MODE_EN);
+-	e->tx_lpi_timer = LPI_THRESH_GET(eeecr);
+-
+ 	return 0;
+ }
+ 
+-- 
+2.47.3
+

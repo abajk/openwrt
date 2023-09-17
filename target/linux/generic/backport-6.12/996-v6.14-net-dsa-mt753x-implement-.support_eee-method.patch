@@ -1,0 +1,36 @@
+From 7eb4f3d9fe173d71b9f9fad7e426e528fcb59b74 Mon Sep 17 00:00:00 2001
+From: "Russell King (Oracle)" <rmk+kernel@armlinux.org.uk>
+Date: Tue, 10 Dec 2024 14:18:31 +0000
+Subject: [PATCH] net: dsa: mt753x: implement .support_eee() method
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Implement the .support_eee() method by using the generic helper as all
+user ports support EEE.
+
+Signed-off-by: Russell King (Oracle) <rmk+kernel@armlinux.org.uk>
+Reviewed-by: Florian Fainelli <florian.fainelli@broadcom.com>
+Reviewed-by: Arınç ÜNAL <arinc.unal@arinc9.com>
+Reviewed-by: Vladimir Oltean <olteanv@gmail.com>
+Link: https://patch.msgid.link/E1tL14J-006cZa-Rh@rmk-PC.armlinux.org.uk
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+---
+ drivers/net/dsa/mt7530.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index 086b8b3d5b40..9605febd3573 100644
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -3238,6 +3238,7 @@ const struct dsa_switch_ops mt7530_switch_ops = {
+ 	.port_mirror_add	= mt753x_port_mirror_add,
+ 	.port_mirror_del	= mt753x_port_mirror_del,
+ 	.phylink_get_caps	= mt753x_phylink_get_caps,
++	.support_eee		= dsa_supports_eee,
+ 	.get_mac_eee		= mt753x_get_mac_eee,
+ 	.set_mac_eee		= mt753x_set_mac_eee,
+ 	.conduit_state_change	= mt753x_conduit_state_change,
+-- 
+2.47.3
+
