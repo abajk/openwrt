@@ -1,0 +1,162 @@
+From 9a92e3484747dcc7673281a87784497cbf6476a3 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 21 Jan 2024 22:27:00 +0100
+Subject: [PATCH] net: dsa: skeleton driver for rtl8306
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/dsa/Kconfig   |   5 ++
+ drivers/net/dsa/Makefile  |   1 +
+ drivers/net/dsa/rtl8306.c | 112 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 118 insertions(+)
+ create mode 100644 drivers/net/dsa/rtl8306.c
+
+diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
+index f8c1d73b251d..5743b191af36 100644
+--- a/drivers/net/dsa/Kconfig
++++ b/drivers/net/dsa/Kconfig
+@@ -124,6 +124,11 @@ config NET_DSA_SMSC_LAN9303_MDIO
+ 	  Enable access functions if the Microchip LAN9303/LAN9354 is configured
+ 	  for MDIO managed mode.
+ 
++config NET_DSA_REALTEK_RTL8306
++	tristate "Realtek RTL8306 switch driver"
++	help
++	  Select to enable support for Realtek RTL8306 switch.
++
+ config NET_DSA_VITESSE_VSC73XX
+ 	tristate
+ 	select NET_DSA_TAG_NONE
+diff --git a/drivers/net/dsa/Makefile b/drivers/net/dsa/Makefile
+index cb9a97340e58..ecd075377494 100644
+--- a/drivers/net/dsa/Makefile
++++ b/drivers/net/dsa/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_NET_DSA_RZN1_A5PSW) += rzn1_a5psw.o
+ obj-$(CONFIG_NET_DSA_SMSC_LAN9303) += lan9303-core.o
+ obj-$(CONFIG_NET_DSA_SMSC_LAN9303_I2C) += lan9303_i2c.o
+ obj-$(CONFIG_NET_DSA_SMSC_LAN9303_MDIO) += lan9303_mdio.o
++obj-$(CONFIG_NET_DSA_REALTEK_RTL8306) += rtl8306.o
+ obj-$(CONFIG_NET_DSA_VITESSE_VSC73XX) += vitesse-vsc73xx-core.o
+ obj-$(CONFIG_NET_DSA_VITESSE_VSC73XX_PLATFORM) += vitesse-vsc73xx-platform.o
+ obj-$(CONFIG_NET_DSA_VITESSE_VSC73XX_SPI) += vitesse-vsc73xx-spi.o
+diff --git a/drivers/net/dsa/rtl8306.c b/drivers/net/dsa/rtl8306.c
+new file mode 100644
+index 000000000000..231782f72b34
+--- /dev/null
++++ b/drivers/net/dsa/rtl8306.c
+@@ -0,0 +1,112 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * TODO: Description
++ */
++
++#include <linux/etherdevice.h>
++#include <linux/if_bridge.h>
++#include <linux/if_vlan.h>
++#include <linux/iopoll.h>
++#include <linux/mfd/syscon.h>
++#include <linux/module.h>
++#include <linux/of_mdio.h>
++#include <linux/of_net.h>
++#include <linux/of_platform.h>
++#include <linux/phy.h>
++#include <linux/phylink.h>
++#include <linux/platform_device.h>
++#include <net/dsa.h>
++
++struct rtl8306_hw_info {
++	int max_ports;
++	int cpu_port;
++	const struct dsa_switch_ops *ops;
++};
++
++struct rtl8306_priv {
++	const struct rtl8306_hw_info *hw_info;
++	struct dsa_switch *ds;
++	struct device *dev;
++};
++
++static enum dsa_tag_protocol rtl8306_get_tag_protocol(struct dsa_switch *ds,
++						    int port,
++						    enum dsa_tag_protocol mp)
++{
++	/* TODO: Implement tag protocol */
++	return DSA_TAG_PROTO_NONE;
++}
++
++static int rtl8306_setup(struct dsa_switch *ds)
++{
++
++	/* TODO: Implement me */
++
++	return 0;
++}
++
++static const struct dsa_switch_ops rtl8306_switch_ops = {
++	.get_tag_protocol	= rtl8306_get_tag_protocol,
++	.setup			= rtl8306_setup,
++};
++
++static int rtl8306_probe(struct platform_device *pdev)
++{
++
++	/* TODO: Implement me */
++
++	return 0;
++}
++
++static void rtl8306_remove(struct platform_device *pdev)
++{
++	struct rtl8306_priv *priv = platform_get_drvdata(pdev);
++
++	if (!priv)
++		return;
++
++	/* disable the switch */
++	// TODO: Disable switch
++
++	dsa_unregister_switch(priv->ds);
++}
++
++static void rtl8306_shutdown(struct platform_device *pdev)
++{
++	struct rtl8306_priv *priv = platform_get_drvdata(pdev);
++
++	if (!priv)
++		return;
++
++	dsa_switch_shutdown(priv->ds);
++
++	platform_set_drvdata(pdev, NULL);
++}
++
++static const struct rtl8306_hw_info rtl8306 = {
++	.max_ports = 7,
++	.cpu_port = 6,
++	.ops = &rtl8306_switch_ops,
++};
++
++static const struct of_device_id rtl8306_of_match[] = {
++	{ .compatible = "realtek,rtl8306", .data = &rtl8306 },
++	{},
++};
++MODULE_DEVICE_TABLE(of, rtl8306_of_match);
++
++static struct platform_driver rtl8306_driver = {
++	.probe = rtl8306_probe,
++	.remove_new = rtl8306_remove,
++	.shutdown = rtl8306_shutdown,
++	.driver = {
++		.name = "rtl8306",
++		.of_match_table = rtl8306_of_match,
++	},
++};
++
++module_platform_driver(rtl8306_driver);
++
++MODULE_AUTHOR("Aleksander Jan Bajkowski <olek2@wp.pl>");
++MODULE_DESCRIPTION("Realtek RTL8306 driver");
++MODULE_LICENSE("GPL v2");
+-- 
+2.39.2
+
