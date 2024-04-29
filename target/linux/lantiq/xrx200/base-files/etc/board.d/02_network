@@ -67,8 +67,6 @@ lantiq_setup_dsl()
 	local board="$1"
 	local annex="a"
 
-	# TODO: Skip dsl on 5490/5491
-
 	case "$board" in
 	arcadyan,vgv7510kw22-brn|\
 	arcadyan,vgv7510kw22-nor|\
