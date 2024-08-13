@@ -1,0 +1,32 @@
+From 19bbbcae66777727a6995bf307a76b4607e2e1f8 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Thu, 3 Oct 2024 23:06:49 +0200
+Subject: [PATCH] move phy disconnect
+
+---
+ drivers/net/ethernet/lantiq_etop.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index 9787105cc3f5..8e98f4351baf 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -428,7 +428,6 @@ ltq_etop_mdio_cleanup(struct net_device *dev)
+ {
+ 	struct ltq_etop_priv *priv = netdev_priv(dev);
+ 
+-	phy_disconnect(dev->phydev);
+ 	mdiobus_unregister(priv->mii_bus);
+ 	mdiobus_free(priv->mii_bus);
+ }
+@@ -462,6 +461,7 @@ ltq_etop_stop(struct net_device *dev)
+ 
+ 	netif_tx_stop_all_queues(dev);
+ 	phy_stop(dev->phydev);
++	phy_disconnect(dev->phydev);
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+ 		struct ltq_etop_chan *ch = &priv->ch[i];
+ 
+-- 
+2.39.5
+

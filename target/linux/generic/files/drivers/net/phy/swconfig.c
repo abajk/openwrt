@@ -1177,13 +1177,21 @@ EXPORT_SYMBOL_GPL(register_switch);
 void
 unregister_switch(struct switch_dev *dev)
 {
+	printk(KERN_ERR "%s:1\n", __func__);
 	swconfig_destroy_led_trigger(dev);
+	printk(KERN_ERR "%s:2\n", __func__);
 	kfree(dev->portbuf);
+	printk(KERN_ERR "%s:3\n", __func__);
 	mutex_lock(&dev->sw_mutex);
+	printk(KERN_ERR "%s:4\n", __func__);
 	swconfig_lock();
+	printk(KERN_ERR "%s:5\n", __func__);
 	list_del(&dev->dev_list);
+	printk(KERN_ERR "%s:6\n", __func__);
 	swconfig_unlock();
+	printk(KERN_ERR "%s:7\n", __func__);
 	mutex_unlock(&dev->sw_mutex);
+	printk(KERN_ERR "%s:8\n", __func__);
 }
 EXPORT_SYMBOL_GPL(unregister_switch);
 

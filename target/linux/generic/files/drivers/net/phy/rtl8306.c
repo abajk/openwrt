@@ -975,7 +975,8 @@ static void
 rtl8306_remove(struct phy_device *pdev)
 {
 	struct rtl_priv *priv = pdev->priv;
-	unregister_switch(&priv->dev);
+	printk(KERN_ERR "%s:1\n", __func__);
+//	unregister_switch(&priv->dev);
 	kfree(priv);
 }
 

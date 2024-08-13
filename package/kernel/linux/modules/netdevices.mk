@@ -72,6 +72,18 @@ endef
 $(eval $(call KernelPackage,alx))
 
 
+define KernelPackage/lantiq-etop
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Lantiq ETOP Driver
+  DEPENDS:=+kmod-mdio
+  KCONFIG:=CONFIG_LANTIQ_ETOP
+  FILES:=$(LINUX_DIR)/drivers/net/ethernet/lantiq_etop.ko
+  AUTOLOAD:=$(call AutoProbe,lantiq_etop)
+endef
+
+$(eval $(call KernelPackage,lantiq-etop))
+
+
 define KernelPackage/atl2
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Atheros L2 Fast Ethernet support

@@ -1,0 +1,31 @@
+From 9567ef2168eb53e3b5d94cc9fdcc494cd0ecfa9a Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Thu, 3 Oct 2024 20:51:18 +0200
+Subject: [PATCH] fixup
+
+---
+ drivers/net/ethernet/lantiq_etop.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index b8735b0c87cc..2ab3b9245570 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -207,12 +207,12 @@ ltq_etop_dma_irq(int irq, void *ptr)
+ static void
+ ltq_etop_free_channel(struct net_device *dev, struct ltq_etop_chan *ch)
+ {
+-	struct ltq_etop_priv *priv = netdev_priv(dev);
++//	struct ltq_etop_priv *priv = netdev_priv(dev);
+ 
+ 	ltq_dma_free(&ch->dma);
+ 	if (ch->dma.irq > 0) {
+ 		printk(KERN_ERR "%s: free irq #%d\n", __func__, ch->dma.irq);
+-		free_irq(ch->dma.irq, priv);
++//		free_irq(ch->dma.irq, priv);
+ 	}
+ 	if (IS_RX(ch->idx)) {
+ 		struct ltq_dma_channel *dma = &ch->dma;
+-- 
+2.39.5
+

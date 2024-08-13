@@ -1,0 +1,67 @@
+From 93ebe0a09c2d21dbacbc8075362d2366dac7cf8b Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Tue, 28 Dec 2021 21:55:40 +0100
+Subject: [PATCH] net: lantiq_etop: convert to platform driver
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/ethernet/lantiq_etop.c | 29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index f5961bdcc480..006cac7fe53c 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  *
+- *   Copyright (C) 2011 John Crispin <blogic@openwrt.org>
++ *   Copyright (C) 2011-12 John Crispin <blogic@openwrt.org>
+  */
+ 
+ #include <linux/kernel.h>
+@@ -735,31 +735,22 @@ ltq_etop_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id ltq_etop_match[] = {
++	{ .compatible = "lantiq,etop-xway" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, ltq_etop_match);
++
+ static struct platform_driver ltq_mii_driver = {
++	.probe = ltq_etop_probe,
+ 	.remove = ltq_etop_remove,
+ 	.driver = {
+ 		.name = "ltq_etop",
++		.of_match_table = ltq_etop_match,
+ 	},
+ };
+ 
+-static int __init
+-init_ltq_etop(void)
+-{
+-	int ret = platform_driver_probe(&ltq_mii_driver, ltq_etop_probe);
+-
+-	if (ret)
+-		pr_err("ltq_etop: Error registering platform driver!");
+-	return ret;
+-}
+-
+-static void __exit
+-exit_ltq_etop(void)
+-{
+-	platform_driver_unregister(&ltq_mii_driver);
+-}
+-
+-module_init(init_ltq_etop);
+-module_exit(exit_ltq_etop);
++module_platform_driver(ltq_mii_driver);
+ 
+ MODULE_AUTHOR("John Crispin <blogic@openwrt.org>");
+ MODULE_DESCRIPTION("Lantiq SoC ETOP");
+-- 
+2.39.2
+

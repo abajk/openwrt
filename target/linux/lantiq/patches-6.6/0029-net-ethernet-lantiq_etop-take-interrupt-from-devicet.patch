@@ -1,0 +1,281 @@
+From 1225676166602270b0aff302be85dd7e25f80678 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Tue, 13 Aug 2024 15:01:38 +0200
+Subject: [PATCH] net: ethernet: lantiq_etop: take interrupt from devicetree
+
+The current version of this driver uses hardcoded interrupt numbers.
+Interrupt allocation does not work since kernel 6.1 and returns error
+code -89. This patch fixes this problem by allocating interrupts based
+on devicetree.
+
+The driver allocates as many queues as the number of interrupts
+defined in dts.
+
+The maximum number of queues depends on the SoC geeration:
+- amazon-se -> 4 RX, 2 TX,
+- danube -> 4 RX, 4 TX.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ .../bindings/net/lantiq,etop-xway.yaml        | 28 +++++--
+ .../mips/boot/dts/lantiq/danube_easy50712.dts |  3 +-
+ .../include/asm/mach-lantiq/xway/lantiq_irq.h |  2 -
+ drivers/net/ethernet/lantiq_etop.c            | 73 ++++++++++++++-----
+ 4 files changed, 78 insertions(+), 28 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/lantiq,etop-xway.yaml b/Documentation/devicetree/bindings/net/lantiq,etop-xway.yaml
+index 3ce9f9a16baf..4f2b93b2f40e 100644
+--- a/Documentation/devicetree/bindings/net/lantiq,etop-xway.yaml
++++ b/Documentation/devicetree/bindings/net/lantiq,etop-xway.yaml
+@@ -20,14 +20,30 @@ properties:
+     maxItems: 1
+ 
+   interrupts:
++    minItems: 2
++    maxItems: 8
+     items:
+-      - description: TX interrupt
+-      - description: RX interrupt
++      - description: RX interrupt Queue 0
++      - description: TX interrupt Queue 0
++      - description: RX interrupt Queue 1
++      - description: TX interrupt Queue 1
++      - description: RX interrupt Queue 2
++      - description: TX interrupt Queue 2
++      - description: RX interrupt Queue 3
++      - description: TX interrupt Queue 3
+ 
+   interrupt-names:
++    minItems: 2
++    maxItems: 8
+     items:
+-      - const: tx
+-      - const: rx
++      - const: rx0
++      - const: tx0
++      - const: rx1
++      - const: tx1
++      - const: rx2
++      - const: tx2
++      - const: rx3
++      - const: tx3
+ 
+   lantiq,tx-burst-length:
+     $ref: /schemas/types.yaml#/definitions/uint32
+@@ -60,8 +76,8 @@ examples:
+         compatible = "lantiq,etop-xway";
+         reg = <0xe180000 0x40000>;
+         interrupt-parent = <&icu0>;
+-        interrupts = <73>, <78>;
+-        interrupt-names = "tx", "rx";
++        interrupts = <72>, <73>, <74>, <75>, <76>, <77>, <78>, <79>;
++        interrupt-names = "rx0", "tx0", "rx1", "tx1", "rx2", "tx2", "rx3", "tx3";
+         lantiq,tx-burst-length = <8>;
+         lantiq,rx-burst-length = <8>;
+         phy-mode = "rmii";
+diff --git a/arch/mips/boot/dts/lantiq/danube_easy50712.dts b/arch/mips/boot/dts/lantiq/danube_easy50712.dts
+index 1ce20b7d05cb..9808732b2d14 100644
+--- a/arch/mips/boot/dts/lantiq/danube_easy50712.dts
++++ b/arch/mips/boot/dts/lantiq/danube_easy50712.dts
+@@ -86,7 +86,8 @@ etop@e180000 {
+ 			compatible = "lantiq,etop-xway";
+ 			reg = <0xe180000 0x40000>;
+ 			interrupt-parent = <&icu0>;
+-			interrupts = <73 78>;
++			interrupts = <73>, <78>;
++			interrupt-names = "tx0", "rx3";
+ 			phy-mode = "rmii";
+ 			mac-address = [ 00 11 22 33 44 55 ];
+ 		};
+diff --git a/arch/mips/include/asm/mach-lantiq/xway/lantiq_irq.h b/arch/mips/include/asm/mach-lantiq/xway/lantiq_irq.h
+index 5f0d0ba991cb..27c4e6da218d 100644
+--- a/arch/mips/include/asm/mach-lantiq/xway/lantiq_irq.h
++++ b/arch/mips/include/asm/mach-lantiq/xway/lantiq_irq.h
+@@ -15,8 +15,6 @@
+ #define INT_NUM_IM4_IRL0	(INT_NUM_IRQ0 + 128)
+ #define INT_NUM_IM_OFFSET	(INT_NUM_IM1_IRL0 - INT_NUM_IM0_IRL0)
+ 
+-#define LTQ_DMA_CH0_INT		(INT_NUM_IM2_IRL0)
+-
+ #define MAX_IM			5
+ 
+ #endif
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index 9e6984815386..292883d1fb15 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -62,11 +62,9 @@
+ #define ETOP_PLEN_UNDER		0x40
+ #define ETOP_CGEN		0x800
+ 
+-/* use 2 static channels for TX/RX */
+-#define LTQ_ETOP_TX_CHANNEL	1
+-#define LTQ_ETOP_RX_CHANNEL	6
+-#define IS_TX(x)		((x) == LTQ_ETOP_TX_CHANNEL)
+-#define IS_RX(x)		((x) == LTQ_ETOP_RX_CHANNEL)
++/* use even channel numbers as RX, odd numbers as TX */
++#define IS_TX(x)		(((x) % 2))
++#define IS_RX(x)		(!((x) % 2))
+ 
+ #define ltq_etop_r32(x)		ltq_r32(ltq_etop_membase + (x))
+ #define ltq_etop_w32(x, y)	ltq_w32(x, ltq_etop_membase + (y))
+@@ -199,12 +197,11 @@ ltq_etop_poll_tx(struct napi_struct *napi, int budget)
+ }
+ 
+ static irqreturn_t
+-ltq_etop_dma_irq(int irq, void *_priv)
++ltq_etop_dma_irq(int irq, void *ptr)
+ {
+-	struct ltq_etop_priv *priv = _priv;
+-	int ch = irq - LTQ_DMA_CH0_INT;
++	struct ltq_etop_chan *ch = ptr;
+ 
+-	napi_schedule(&priv->ch[ch].napi);
++	napi_schedule(&ch->napi);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -214,8 +211,10 @@ ltq_etop_free_channel(struct net_device *dev, struct ltq_etop_chan *ch)
+ 	struct ltq_etop_priv *priv = netdev_priv(dev);
+ 
+ 	ltq_dma_free(&ch->dma);
+-	if (ch->dma.irq)
++	if (ch->dma.irq > 0) {
++		printk(KERN_ERR "%s: free irq #%d\n", __func__, ch->dma.irq);
+ 		free_irq(ch->dma.irq, priv);
++	}
+ 	if (IS_RX(ch->idx)) {
+ 		struct ltq_dma_channel *dma = &ch->dma;
+ 
+@@ -232,6 +231,7 @@ ltq_etop_hw_exit(struct net_device *dev)
+ 
+ 	ltq_pmu_disable(PMU_PPE);
+ 	for (i = 0; i < MAX_DMA_CHAN; i++)
++		/* TODO: Replace check with better */
+ 		if (IS_TX(i) || IS_RX(i))
+ 			ltq_etop_free_channel(dev, &priv->ch[i]);
+ }
+@@ -268,20 +268,23 @@ ltq_etop_hw_init(struct net_device *dev)
+ 	ltq_dma_init_port(DMA_PORT_ETOP, priv->tx_burst_len, priv->rx_burst_len);
+ 
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+-		int irq = LTQ_DMA_CH0_INT + i;
+ 		struct ltq_etop_chan *ch = &priv->ch[i];
+ 
+ 		ch->dma.nr = i;
+ 		ch->idx = ch->dma.nr;
+ 		ch->dma.dev = &priv->pdev->dev;
+ 
++		if (ch->dma.irq < 0)
++			continue;
++
+ 		if (IS_TX(i)) {
+ 			ltq_dma_alloc_tx(&ch->dma);
+-			err = request_irq(irq, ltq_etop_dma_irq, 0, "etop_tx", priv);
++			err = request_irq(ch->dma.irq, ltq_etop_dma_irq, 0,
++					  "etop_tx", ch);
+ 			if (err) {
+ 				netdev_err(dev,
+ 					   "Unable to get Tx DMA IRQ %d\n",
+-					   irq);
++					   ch->dma.irq);
+ 				return err;
+ 			}
+ 		} else if (IS_RX(i)) {
+@@ -291,15 +294,15 @@ ltq_etop_hw_init(struct net_device *dev)
+ 				if (ltq_etop_alloc_skb(ch))
+ 					return -ENOMEM;
+ 			ch->dma.desc = 0;
+-			err = request_irq(irq, ltq_etop_dma_irq, 0, "etop_rx", priv);
++			err = request_irq(ch->dma.irq, ltq_etop_dma_irq, 0,
++					  "etop_rx", ch);
+ 			if (err) {
+ 				netdev_err(dev,
+ 					   "Unable to get Rx DMA IRQ %d\n",
+-					   irq);
++					   ch->dma.irq);
+ 				return err;
+ 			}
+ 		}
+-		ch->dma.irq = irq;
+ 	}
+ 	return 0;
+ }
+@@ -440,8 +443,9 @@ ltq_etop_open(struct net_device *dev)
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+ 		struct ltq_etop_chan *ch = &priv->ch[i];
+ 
+-		if (!IS_TX(i) && (!IS_RX(i)))
++		if (ch->dma.irq < 0)
+ 			continue;
++
+ 		ltq_dma_open(&ch->dma);
+ 		ltq_dma_enable_irq(&ch->dma);
+ 		napi_enable(&ch->napi);
+@@ -462,8 +466,9 @@ ltq_etop_stop(struct net_device *dev)
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+ 		struct ltq_etop_chan *ch = &priv->ch[i];
+ 
+-		if (!IS_RX(i) && !IS_TX(i))
++		if (ch->dma.irq < 0)
+ 			continue;
++
+ 		napi_disable(&ch->napi);
+ 		ltq_dma_close(&ch->dma);
+ 	}
+@@ -643,7 +648,7 @@ ltq_etop_probe(struct platform_device *pdev)
+ 	struct net_device *dev;
+ 	struct ltq_etop_priv *priv;
+ 	struct resource *res;
+-	int err;
++	int err, rxq, txq;
+ 	int i;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -685,6 +690,33 @@ ltq_etop_probe(struct platform_device *pdev)
+ 	spin_lock_init(&priv->lock);
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 
++	rxq = 0;
++	txq = 0;
++	for (i = 0; i < MAX_DMA_CHAN; i++) {
++		char chan[4];
++
++		snprintf(chan, sizeof(chan), "%s%d", (i % 2) ? "tx" : "rx",
++			 (i / 2));
++		priv->ch[i].dma.irq = platform_get_irq_byname_optional(pdev,
++								       chan);
++		if (priv->ch[i].dma.irq < 0)
++			continue;
++
++		if (IS_TX(i))
++			txq++;
++		else if (IS_RX(i))
++			rxq++;
++	}
++
++	if (txq < 1) {
++		dev_err(&pdev->dev, "at least one TX interrupt is required\n");
++		return -ENOENT;
++	}
++	if (rxq < 1) {
++		dev_err(&pdev->dev, "at least one RX interrupt is required\n");
++		return -ENOENT;
++	}
++
+ 	err = device_property_read_u32(&pdev->dev, "lantiq,tx-burst-length", &priv->tx_burst_len);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "unable to read tx-burst-length property\n");
+@@ -698,6 +730,9 @@ ltq_etop_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
++		if (priv->ch[i].dma.irq < 0)
++			continue;
++
+ 		if (IS_TX(i))
+ 			netif_napi_add_weight(dev, &priv->ch[i].napi,
+ 					      ltq_etop_poll_tx, 8);
+-- 
+2.39.2
+
