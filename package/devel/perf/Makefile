@@ -71,9 +71,7 @@ MAKE_FLAGS = \
 	O=$(PKG_BUILD_DIR) \
 	prefix=/usr
 
-ifeq ($(LINUX_KARCH),powerpc)
-	MAKE_FLAGS += NO_AUXTRACE=1
-endif
+MAKE_FLAGS += NO_AUXTRACE=1
 
 define Build/Compile
 	+$(MAKE) $(PKG_JOBS) $(MAKE_FLAGS) \
