@@ -233,7 +233,8 @@
 			compatible = "lantiq,etop-xway";
 			reg = <0xe180000 0x40000>;
 			interrupt-parent = <&icu0>;
-			interrupts = <105 109>;
+			interrupts = <105>, <109>;
+			interrupt-names = "tx0", "rx3";
 			pinctrl-0 = <&mdio_pins>;
 			pinctrl-names = "default";
 			lantiq,tx-burst-length = <4>;

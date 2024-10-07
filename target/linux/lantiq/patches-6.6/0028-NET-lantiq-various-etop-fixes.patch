@@ -1,13 +1,15 @@
-From 870ed9cae083ff8a60a739ef7e74c5a1800533be Mon Sep 17 00:00:00 2001
+From 799df1271dc4448f78757ef333da6344030fd6f3 Mon Sep 17 00:00:00 2001
 From: John Crispin <blogic@openwrt.org>
 Date: Tue, 9 Sep 2014 22:45:34 +0200
-Subject: [PATCH 28/36] NET: lantiq: various etop fixes
+Subject: [PATCH 2/2] NET: lantiq: various etop fixes
 
 Signed-off-by: John Crispin <blogic@openwrt.org>
 ---
- drivers/net/ethernet/lantiq_etop.c | 534 ++++++++++++++++++++---------
- 1 file changed, 379 insertions(+), 155 deletions(-)
+ drivers/net/ethernet/lantiq_etop.c | 381 +++++++++++++++++++++++------
+ 1 file changed, 309 insertions(+), 72 deletions(-)
 
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index 3573697c9c20..6c4b99567e9f 100644
 --- a/drivers/net/ethernet/lantiq_etop.c
 +++ b/drivers/net/ethernet/lantiq_etop.c
 @@ -1,7 +1,7 @@
@@ -46,7 +48,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  #define MDIO_REQUEST		0x80000000
  #define MDIO_READ		0x40000000
  #define MDIO_ADDR_MASK		0x1f
-@@ -42,44 +47,91 @@
+@@ -42,42 +47,96 @@
  #define MDIO_REG_OFFSET		0x10
  #define MDIO_VAL_MASK		0xffff
  
@@ -83,11 +85,10 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 -#define ETOP_CGEN		0x800
 +#define ETOP_CFG_MII0		0x01
  
--/* use 2 static channels for TX/RX */
--#define LTQ_ETOP_TX_CHANNEL	1
--#define LTQ_ETOP_RX_CHANNEL	6
--#define IS_TX(x)		((x) == LTQ_ETOP_TX_CHANNEL)
--#define IS_RX(x)		((x) == LTQ_ETOP_RX_CHANNEL)
+ /* use even channel numbers as RX, odd numbers as TX */
+ #define IS_TX(x)		(((x) % 2))
+ #define IS_RX(x)		(!((x) % 2))
+ 
 +#define ETOP_CFG_MASK           0xfff
 +#define ETOP_CFG_FEN0		BIT(8)
 +#define ETOP_CFG_SEN0		BIT(6)
@@ -125,7 +126,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +#define MDIO_XR9_REG_OFFSET	0
 +#define MDIO_XR9_ADDR_OFFSET	5
 +#define MDIO_XR9_WR_OFFSET	16
- 
++
 +#define LTQ_DMA_ETOP	((of_machine_is_compatible("lantiq,ase")) ? \
 +			(INT_NUM_IM3_IRL0) : (INT_NUM_IM2_IRL0))
 +
@@ -147,13 +148,13 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +static void __iomem *ltq_gbit_membase;
  
  struct ltq_etop_chan {
--	int idx;
+ 	int idx;
  	int tx_free;
 +	int irq;
  	struct net_device *netdev;
  	struct napi_struct napi;
  	struct ltq_dma_channel dma;
-@@ -89,25 +141,39 @@ struct ltq_etop_chan {
+@@ -87,7 +146,6 @@ struct ltq_etop_chan {
  struct ltq_etop_priv {
  	struct net_device *netdev;
  	struct platform_device *pdev;
@@ -161,17 +162,10 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	struct resource *res;
  
  	struct mii_bus *mii_bus;
- 
--	struct ltq_etop_chan ch[MAX_DMA_CHAN];
-+	struct ltq_etop_chan txch;
-+	struct ltq_etop_chan rxch;
- 
+@@ -97,15 +155,26 @@ struct ltq_etop_priv {
  	int tx_burst_len;
  	int rx_burst_len;
  
-+	int tx_irq;
-+	int rx_irq;
-+
 +	unsigned char mac[6];
 +	phy_interface_t mii_mode;
 +
@@ -196,7 +190,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	if (!ch->skb[ch->dma.desc])
  		return -ENOMEM;
  	ch->dma.desc_base[ch->dma.desc].addr =
-@@ -142,8 +208,11 @@ ltq_etop_hw_receive(struct ltq_etop_chan
+@@ -140,8 +209,11 @@ ltq_etop_hw_receive(struct ltq_etop_chan *ch)
  	spin_unlock_irqrestore(&priv->lock, flags);
  
  	skb_put(skb, len);
@@ -208,7 +202,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  }
  
  static int
-@@ -151,7 +220,9 @@ ltq_etop_poll_rx(struct napi_struct *nap
+@@ -149,7 +221,9 @@ ltq_etop_poll_rx(struct napi_struct *napi, int budget)
  {
  	struct ltq_etop_chan *ch = container_of(napi,
  				struct ltq_etop_chan, napi);
@@ -218,7 +212,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  
  	while (work_done < budget) {
  		struct ltq_dma_desc *desc = &ch->dma.desc_base[ch->dma.desc];
-@@ -163,7 +234,9 @@ ltq_etop_poll_rx(struct napi_struct *nap
+@@ -161,7 +235,9 @@ ltq_etop_poll_rx(struct napi_struct *napi, int budget)
  	}
  	if (work_done < budget) {
  		napi_complete_done(&ch->napi, work_done);
@@ -228,7 +222,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	}
  	return work_done;
  }
-@@ -175,12 +248,14 @@ ltq_etop_poll_tx(struct napi_struct *nap
+@@ -173,12 +249,14 @@ ltq_etop_poll_tx(struct napi_struct *napi, int budget)
  		container_of(napi, struct ltq_etop_chan, napi);
  	struct ltq_etop_priv *priv = netdev_priv(ch->netdev);
  	struct netdev_queue *txq =
@@ -244,7 +238,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  		dev_kfree_skb_any(ch->skb[ch->tx_free]);
  		ch->skb[ch->tx_free] = NULL;
  		memset(&ch->dma.desc_base[ch->tx_free], 0,
-@@ -193,7 +268,9 @@ ltq_etop_poll_tx(struct napi_struct *nap
+@@ -191,7 +269,9 @@ ltq_etop_poll_tx(struct napi_struct *napi, int budget)
  	if (netif_tx_queue_stopped(txq))
  		netif_tx_start_queue(txq);
  	napi_complete(&ch->napi);
@@ -254,39 +248,19 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	return 1;
  }
  
-@@ -201,9 +278,11 @@ static irqreturn_t
- ltq_etop_dma_irq(int irq, void *_priv)
- {
- 	struct ltq_etop_priv *priv = _priv;
--	int ch = irq - LTQ_DMA_CH0_INT;
+@@ -201,6 +281,7 @@ ltq_etop_dma_irq(int irq, void *ptr)
+ 	struct ltq_etop_chan *ch = ptr;
  
--	napi_schedule(&priv->ch[ch].napi);
-+	if (irq == priv->txch.dma.irq)
-+		napi_schedule(&priv->txch.napi);
-+	else
-+		napi_schedule(&priv->rxch.napi);
+ 	napi_schedule(&ch->napi);
++
  	return IRQ_HANDLED;
  }
  
-@@ -215,7 +294,7 @@ ltq_etop_free_channel(struct net_device
- 	ltq_dma_free(&ch->dma);
- 	if (ch->dma.irq)
- 		free_irq(ch->dma.irq, priv);
--	if (IS_RX(ch->idx)) {
-+	if (ch == &priv->rxch) {
- 		struct ltq_dma_channel *dma = &ch->dma;
- 
- 		for (dma->desc = 0; dma->desc < LTQ_DESC_NUM; dma->desc++)
-@@ -227,80 +306,137 @@ static void
- ltq_etop_hw_exit(struct net_device *dev)
- {
+@@ -228,41 +309,104 @@ ltq_etop_hw_exit(struct net_device *dev)
  	struct ltq_etop_priv *priv = netdev_priv(dev);
--	int i;
+ 	int i;
  
 -	ltq_pmu_disable(PMU_PPE);
--	for (i = 0; i < MAX_DMA_CHAN; i++)
--		if (IS_TX(i) || IS_RX(i))
--			ltq_etop_free_channel(dev, &priv->ch[i]);
 +	clk_disable(priv->clk_ppe);
 +
 +	if (of_machine_is_compatible("lantiq,ar9"))
@@ -297,10 +271,12 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +		clk_disable(priv->clk_ephycgu);
 +	}
 +
-+	ltq_etop_free_channel(dev, &priv->txch);
-+	ltq_etop_free_channel(dev, &priv->rxch);
-+}
-+
+ 	for (i = 0; i < MAX_DMA_CHAN; i++)
+ 		/* TODO: Replace check with better */
+ 		if (IS_TX(i) || IS_RX(i))
+ 			ltq_etop_free_channel(dev, &priv->ch[i]);
+ }
+ 
 +static void
 +ltq_etop_gbit_init(struct net_device *dev)
 +{
@@ -326,8 +302,8 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +	/* set mdc clock to 2.5 MHz */
 +	ltq_gbit_w32_mask(MDC_CLOCK_MASK, 4 << MDC_CLOCK_OFFSET,
 +			  LTQ_GBIT_RGMII_CTL);
- }
- 
++}
++
  static int
  ltq_etop_hw_init(struct net_device *dev)
  {
@@ -335,10 +311,11 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 -	int i;
 -	int err;
 +	phy_interface_t mii_mode = priv->mii_mode;
-+
-+	clk_enable(priv->clk_ppe);
  
 -	ltq_pmu_enable(PMU_PPE);
++	clk_enable(priv->clk_ppe);
+ 
+-	switch (priv->pldata->mii_mode) {
 +	if (of_machine_is_compatible("lantiq,ar9")) {
 +		ltq_etop_gbit_init(dev);
 +		/* force the etops link to the gbit to MII */
@@ -347,8 +324,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +	ltq_etop_w32_mask(MDIO_CFG_MASK, 0, LTQ_ETOP_MDIO_CFG);
 +	ltq_etop_w32_mask(MAC_CFG_MASK, MAC_CFG_CGEN | MAC_CFG_DUPLEX |
 +			MAC_CFG_SPEED | MAC_CFG_LINK, LTQ_ETOP_MAC_CFG);
- 
--	switch (priv->pldata->mii_mode) {
++
 +	switch (mii_mode) {
  	case PHY_INTERFACE_MODE_RMII:
 -		ltq_etop_w32_mask(ETOP_MII_MASK, ETOP_MII_REVERSE,
@@ -393,81 +369,15 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +ltq_etop_dma_init(struct net_device *dev)
 +{
 +	struct ltq_etop_priv *priv = netdev_priv(dev);
-+	int tx = priv->tx_irq - LTQ_DMA_ETOP;
-+	int rx = priv->rx_irq - LTQ_DMA_ETOP;
-+	int err;
++	int err, i;
  
  	ltq_dma_init_port(DMA_PORT_ETOP, priv->tx_burst_len, priv->rx_burst_len);
  
--	for (i = 0; i < MAX_DMA_CHAN; i++) {
--		int irq = LTQ_DMA_CH0_INT + i;
--		struct ltq_etop_chan *ch = &priv->ch[i];
--
--		ch->dma.nr = i;
--		ch->idx = ch->dma.nr;
--		ch->dma.dev = &priv->pdev->dev;
--
--		if (IS_TX(i)) {
--			ltq_dma_alloc_tx(&ch->dma);
--			err = request_irq(irq, ltq_etop_dma_irq, 0, "etop_tx", priv);
--			if (err) {
--				netdev_err(dev,
--					   "Unable to get Tx DMA IRQ %d\n",
--					   irq);
--				return err;
--			}
--		} else if (IS_RX(i)) {
--			ltq_dma_alloc_rx(&ch->dma);
--			for (ch->dma.desc = 0; ch->dma.desc < LTQ_DESC_NUM;
--					ch->dma.desc++)
--				if (ltq_etop_alloc_skb(ch))
--					return -ENOMEM;
--			ch->dma.desc = 0;
--			err = request_irq(irq, ltq_etop_dma_irq, 0, "etop_rx", priv);
--			if (err) {
--				netdev_err(dev,
--					   "Unable to get Rx DMA IRQ %d\n",
--					   irq);
--				return err;
--			}
-+	priv->txch.dma.nr = tx;
-+	priv->txch.dma.dev = &priv->pdev->dev;
-+	ltq_dma_alloc_tx(&priv->txch.dma);
-+	err = request_irq(priv->tx_irq, ltq_etop_dma_irq, 0, "eth_tx", priv);
-+	if (err) {
-+		netdev_err(dev, "failed to allocate tx irq\n");
-+		goto err_out;
-+	}
-+	priv->txch.dma.irq = priv->tx_irq;
-+
-+	priv->rxch.dma.nr = rx;
-+	priv->rxch.dma.dev = &priv->pdev->dev;
-+	ltq_dma_alloc_rx(&priv->rxch.dma);
-+	for (priv->rxch.dma.desc = 0; priv->rxch.dma.desc < LTQ_DESC_NUM;
-+			priv->rxch.dma.desc++) {
-+		if (ltq_etop_alloc_skb(&priv->rxch)) {
-+			netdev_err(dev, "failed to allocate skbs\n");
-+			err = -ENOMEM;
-+			goto err_out;
- 		}
--		ch->dma.irq = irq;
- 	}
--	return 0;
-+	priv->rxch.dma.desc = 0;
-+	err = request_irq(priv->rx_irq, ltq_etop_dma_irq, 0, "eth_rx", priv);
-+	if (err)
-+		netdev_err(dev, "failed to allocate rx irq\n");
-+	else
-+		priv->rxch.dma.irq = priv->rx_irq;
-+err_out:
-+	return err;
- }
- 
- static void
-@@ -319,6 +455,39 @@ static const struct ethtool_ops ltq_etop
+@@ -321,6 +465,39 @@ static const struct ethtool_ops ltq_etop_ethtool_ops = {
+ 	.set_link_ksettings = phy_ethtool_set_link_ksettings,
  };
  
- static int
++static int
 +ltq_etop_mdio_wr_xr9(struct mii_bus *bus, int phy_addr,
 +		     int phy_reg, u16 phy_data)
 +{
@@ -500,11 +410,10 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +	return val;
 +}
 +
-+static int
+ static int
  ltq_etop_mdio_wr(struct mii_bus *bus, int phy_addr, int phy_reg, u16 phy_data)
  {
- 	u32 val = MDIO_REQUEST |
-@@ -326,9 +495,9 @@ ltq_etop_mdio_wr(struct mii_bus *bus, in
+@@ -329,9 +506,9 @@ ltq_etop_mdio_wr(struct mii_bus *bus, int phy_addr, int phy_reg, u16 phy_data)
  		((phy_reg & MDIO_REG_MASK) << MDIO_REG_OFFSET) |
  		phy_data;
  
@@ -516,7 +425,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	return 0;
  }
  
-@@ -339,12 +508,12 @@ ltq_etop_mdio_rd(struct mii_bus *bus, in
+@@ -342,12 +519,12 @@ ltq_etop_mdio_rd(struct mii_bus *bus, int phy_addr, int phy_reg)
  		((phy_addr & MDIO_ADDR_MASK) << MDIO_ADDR_OFFSET) |
  		((phy_reg & MDIO_REG_MASK) << MDIO_REG_OFFSET);
  
@@ -533,7 +442,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	return val;
  }
  
-@@ -360,7 +529,10 @@ ltq_etop_mdio_probe(struct net_device *d
+@@ -363,7 +540,10 @@ ltq_etop_mdio_probe(struct net_device *dev)
  	struct ltq_etop_priv *priv = netdev_priv(dev);
  	struct phy_device *phydev;
  
@@ -545,7 +454,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  
  	if (!phydev) {
  		netdev_err(dev, "no PHY found\n");
-@@ -368,14 +540,17 @@ ltq_etop_mdio_probe(struct net_device *d
+@@ -371,14 +551,17 @@ ltq_etop_mdio_probe(struct net_device *dev)
  	}
  
  	phydev = phy_connect(dev, phydev_name(phydev),
@@ -565,7 +474,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  
  	phy_attached_info(phydev);
  
-@@ -396,8 +571,13 @@ ltq_etop_mdio_init(struct net_device *de
+@@ -399,8 +582,13 @@ ltq_etop_mdio_init(struct net_device *dev)
  	}
  
  	priv->mii_bus->priv = dev;
@@ -581,77 +490,64 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	priv->mii_bus->name = "ltq_mii";
  	snprintf(priv->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
  		 priv->pdev->name, priv->pdev->id);
-@@ -434,18 +614,21 @@ static int
+@@ -437,6 +625,7 @@ static int
  ltq_etop_open(struct net_device *dev)
  {
  	struct ltq_etop_priv *priv = netdev_priv(dev);
--	int i;
 +	unsigned long flags;
+ 	int i;
  
--	for (i = 0; i < MAX_DMA_CHAN; i++) {
--		struct ltq_etop_chan *ch = &priv->ch[i];
-+	napi_enable(&priv->txch.napi);
-+	napi_enable(&priv->rxch.napi);
-+
-+	spin_lock_irqsave(&priv->lock, flags);
-+	ltq_dma_open(&priv->txch.dma);
-+	ltq_dma_enable_irq(&priv->txch.dma);
-+	ltq_dma_open(&priv->rxch.dma);
-+	ltq_dma_enable_irq(&priv->rxch.dma);
-+	spin_unlock_irqrestore(&priv->lock, flags);
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+@@ -445,11 +634,16 @@ ltq_etop_open(struct net_device *dev)
+ 		if (ch->dma.irq < 0)
+ 			continue;
+ 
++		spin_lock_irqsave(&priv->lock, flags);
+ 		ltq_dma_open(&ch->dma);
+ 		ltq_dma_enable_irq(&ch->dma);
++		spin_unlock_irqrestore(&priv->lock, flags);
+ 		napi_enable(&ch->napi);
+ 	}
+-	phy_start(dev->phydev);
 +
 +	if (dev->phydev)
 +		phy_start(dev->phydev);
- 
--		if (!IS_TX(i) && (!IS_RX(i)))
--			continue;
--		ltq_dma_open(&ch->dma);
--		ltq_dma_enable_irq(&ch->dma);
--		napi_enable(&ch->napi);
--	}
--	phy_start(dev->phydev);
++
  	netif_tx_start_all_queues(dev);
  	return 0;
  }
-@@ -454,18 +637,19 @@ static int
+@@ -458,10 +652,13 @@ static int
  ltq_etop_stop(struct net_device *dev)
  {
  	struct ltq_etop_priv *priv = netdev_priv(dev);
--	int i;
 +	unsigned long flags;
+ 	int i;
  
  	netif_tx_stop_all_queues(dev);
 -	phy_stop(dev->phydev);
--	for (i = 0; i < MAX_DMA_CHAN; i++) {
--		struct ltq_etop_chan *ch = &priv->ch[i];
--
--		if (!IS_RX(i) && !IS_TX(i))
--			continue;
--		napi_disable(&ch->napi);
--		ltq_dma_close(&ch->dma);
--	}
 +	if (dev->phydev)
 +		phy_stop(dev->phydev);
-+	napi_disable(&priv->txch.napi);
-+	napi_disable(&priv->rxch.napi);
 +
-+	spin_lock_irqsave(&priv->lock, flags);
-+	ltq_dma_close(&priv->txch.dma);
-+	ltq_dma_close(&priv->rxch.dma);
-+	spin_unlock_irqrestore(&priv->lock, flags);
+ 	for (i = 0; i < MAX_DMA_CHAN; i++) {
+ 		struct ltq_etop_chan *ch = &priv->ch[i];
+ 
+@@ -469,8 +666,11 @@ ltq_etop_stop(struct net_device *dev)
+ 			continue;
+ 
+ 		napi_disable(&ch->napi);
++		spin_lock_irqsave(&priv->lock, flags);
+ 		ltq_dma_close(&ch->dma);
++		spin_unlock_irqrestore(&priv->lock, flags);
+ 	}
 +
  	return 0;
  }
  
-@@ -475,17 +659,21 @@ ltq_etop_tx(struct sk_buff *skb, struct
- 	int queue = skb_get_queue_mapping(skb);
- 	struct netdev_queue *txq = netdev_get_tx_queue(dev, queue);
+@@ -482,12 +682,15 @@ ltq_etop_tx(struct sk_buff *skb, struct net_device *dev)
  	struct ltq_etop_priv *priv = netdev_priv(dev);
--	struct ltq_etop_chan *ch = &priv->ch[(queue << 1) | 1];
--	struct ltq_dma_desc *desc = &ch->dma.desc_base[ch->dma.desc];
+ 	struct ltq_etop_chan *ch = &priv->ch[(queue << 1) | 1];
+ 	struct ltq_dma_desc *desc = &ch->dma.desc_base[ch->dma.desc];
 -	int len;
-+	struct ltq_dma_desc *desc =
-+		&priv->txch.dma.desc_base[priv->txch.dma.desc];
  	unsigned long flags;
  	u32 byte_offset;
 +	int len;
@@ -664,37 +560,8 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +
  	len = skb->len;
  
--	if ((desc->ctl & (LTQ_DMA_OWN | LTQ_DMA_C)) || ch->skb[ch->dma.desc]) {
-+	if ((desc->ctl & (LTQ_DMA_OWN | LTQ_DMA_C)) ||
-+	    priv->txch.skb[priv->txch.dma.desc]) {
- 		netdev_err(dev, "tx ring full\n");
- 		netif_tx_stop_queue(txq);
- 		return NETDEV_TX_BUSY;
-@@ -493,7 +681,7 @@ ltq_etop_tx(struct sk_buff *skb, struct
- 
- 	/* dma needs to start on a burst length value aligned address */
- 	byte_offset = CPHYSADDR(skb->data) % (priv->tx_burst_len * 4);
--	ch->skb[ch->dma.desc] = skb;
-+	priv->txch.skb[priv->txch.dma.desc] = skb;
- 
- 	netif_trans_update(dev);
- 
-@@ -504,11 +692,11 @@ ltq_etop_tx(struct sk_buff *skb, struct
- 	wmb();
- 	desc->ctl = LTQ_DMA_OWN | LTQ_DMA_SOP | LTQ_DMA_EOP |
- 		LTQ_DMA_TX_OFFSET(byte_offset) | (len & LTQ_DMA_SIZE_MASK);
--	ch->dma.desc++;
--	ch->dma.desc %= LTQ_DESC_NUM;
-+	priv->txch.dma.desc++;
-+	priv->txch.dma.desc %= LTQ_DESC_NUM;
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
--	if (ch->dma.desc_base[ch->dma.desc].ctl & LTQ_DMA_OWN)
-+	if (priv->txch.dma.desc_base[priv->txch.dma.desc].ctl & LTQ_DMA_OWN)
- 		netif_tx_stop_queue(txq);
- 
- 	return NETDEV_TX_OK;
-@@ -519,11 +707,14 @@ ltq_etop_change_mtu(struct net_device *d
+ 	if ((desc->ctl & (LTQ_DMA_OWN | LTQ_DMA_C)) || ch->skb[ch->dma.desc]) {
+@@ -524,11 +727,14 @@ ltq_etop_change_mtu(struct net_device *dev, int new_mtu)
  {
  	struct ltq_etop_priv *priv = netdev_priv(dev);
  	unsigned long flags;
@@ -710,7 +577,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	spin_unlock_irqrestore(&priv->lock, flags);
  
  	return 0;
-@@ -576,6 +767,9 @@ ltq_etop_init(struct net_device *dev)
+@@ -581,6 +787,9 @@ ltq_etop_init(struct net_device *dev)
  	if (err)
  		goto err_hw;
  	ltq_etop_change_mtu(dev, 1500);
@@ -720,7 +587,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  
  	memcpy(&mac, &priv->pldata->mac, sizeof(struct sockaddr));
  	if (!is_valid_ether_addr(mac.sa_data)) {
-@@ -593,9 +787,10 @@ ltq_etop_init(struct net_device *dev)
+@@ -598,9 +807,10 @@ ltq_etop_init(struct net_device *dev)
  		dev->addr_assign_type = NET_ADDR_RANDOM;
  
  	ltq_etop_set_multicast_list(dev);
@@ -734,17 +601,17 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	return 0;
  
  err_netdev:
-@@ -615,6 +810,9 @@ ltq_etop_tx_timeout(struct net_device *d
+@@ -618,6 +828,9 @@ ltq_etop_tx_timeout(struct net_device *dev, unsigned int txqueue)
+ 
+ 	ltq_etop_hw_exit(dev);
  	err = ltq_etop_hw_init(dev);
- 	if (err)
- 		goto err_hw;
-+	err = ltq_etop_dma_init(dev);
 +	if (err)
 +		goto err_hw;
++	err = ltq_etop_dma_init(dev);
+ 	if (err)
+ 		goto err_hw;
  	netif_trans_update(dev);
- 	netif_wake_queue(dev);
- 	return;
-@@ -638,14 +836,18 @@ static const struct net_device_ops ltq_e
+@@ -643,12 +856,11 @@ static const struct net_device_ops ltq_eth_netdev_ops = {
  	.ndo_tx_timeout = ltq_etop_tx_timeout,
  };
  
@@ -755,19 +622,11 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	struct net_device *dev;
  	struct ltq_etop_priv *priv;
 -	struct resource *res;
-+	struct resource *res, *gbit_res, irqres[2];
- 	int err;
--	int i;
-+
-+	err = of_irq_to_resource_table(pdev->dev.of_node, irqres, 2);
-+	if (err != 2) {
-+		dev_err(&pdev->dev, "failed to get etop irqs\n");
-+		return -EINVAL;
-+	}
++	struct resource *res, *gbit_res;
+ 	int err, rxq, txq;
+ 	int i;
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
-@@ -671,18 +873,54 @@ ltq_etop_probe(struct platform_device *p
+@@ -676,18 +888,52 @@ ltq_etop_probe(struct platform_device *pdev)
  		goto err_out;
  	}
  
@@ -800,8 +659,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	priv->pdev = pdev;
 -	priv->pldata = dev_get_platdata(&pdev->dev);
  	priv->netdev = dev;
-+	priv->tx_irq = irqres[0].start;
-+	priv->rx_irq = irqres[1].start;
 +	err = of_get_phy_mode(pdev->dev.of_node, &priv->mii_mode);
 +	if (err)
 +		pr_err("Can't find phy-mode for port\n");
@@ -828,27 +685,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  	spin_lock_init(&priv->lock);
  	SET_NETDEV_DEV(dev, &pdev->dev);
  
-@@ -698,15 +936,10 @@ ltq_etop_probe(struct platform_device *p
- 		goto err_free;
- 	}
- 
--	for (i = 0; i < MAX_DMA_CHAN; i++) {
--		if (IS_TX(i))
--			netif_napi_add_weight(dev, &priv->ch[i].napi,
--					      ltq_etop_poll_tx, 8);
--		else if (IS_RX(i))
--			netif_napi_add_weight(dev, &priv->ch[i].napi,
--					      ltq_etop_poll_rx, 32);
--		priv->ch[i].netdev = dev;
--	}
-+	netif_napi_add_weight(dev, &priv->txch.napi, ltq_etop_poll_tx, 8);
-+	netif_napi_add_weight(dev, &priv->rxch.napi, ltq_etop_poll_rx, 32);
-+	priv->txch.netdev = dev;
-+	priv->rxch.netdev = dev;
- 
- 	err = register_netdev(dev);
- 	if (err)
-@@ -735,31 +968,22 @@ ltq_etop_remove(struct platform_device *
+@@ -770,31 +1016,22 @@ ltq_etop_remove(struct platform_device *pdev)
  	return 0;
  }
  
@@ -889,3 +726,6 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
  
  MODULE_AUTHOR("John Crispin <blogic@openwrt.org>");
  MODULE_DESCRIPTION("Lantiq SoC ETOP");
+-- 
+2.39.5
+
