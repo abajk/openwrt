@@ -1,0 +1,92 @@
+From af314c7845155096c1a097492b159d18545d5847 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Mon, 25 Sep 2023 21:53:52 +0200
+Subject: [PATCH] net: dsa: mt753x: add some debug
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/dsa/mt7530.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index c05e01e5b4b3..c4dd947ad62a 100644
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -1596,6 +1596,27 @@ mt7530_port_fdb_dump(struct dsa_switch *ds, int port,
+ 	return 0;
+ }
+ 
++static int
++mt7530_lag_fdb_add(struct dsa_switch *ds, struct dsa_lag lag,
++		   const unsigned char *addr, u16 vid,
++		   struct dsa_db db)
++{
++
++	printk(KERN_ERR "%s\n", __func__);
++
++	return 0;
++}
++
++static int
++mt7530_lag_fdb_del(struct dsa_switch *ds, struct dsa_lag lag,
++		   const unsigned char *addr, u16 vid,
++		   struct dsa_db db)
++{
++	printk(KERN_ERR "%s\n", __func__);
++
++	return 0;
++}
++
+ static int
+ mt7530_port_mdb_add(struct dsa_switch *ds, int port,
+ 		    const struct switchdev_obj_port_mdb *mdb,
+@@ -3210,6 +3231,8 @@ int mt753x_port_lag_join(struct dsa_switch *ds, int port, struct dsa_lag lag,
+ {
+ 	int ret;
+ 
++	printk(KERN_ERR "%s: port=%d\n", __func__, port);
++
+ 	if (!mt753x_lag_can_offload(ds, lag, info, extack))
+ 		return -EOPNOTSUPP;
+ 
+@@ -3223,9 +3246,20 @@ int mt753x_port_lag_join(struct dsa_switch *ds, int port, struct dsa_lag lag,
+ int mt753x_port_lag_leave(struct dsa_switch *ds, int port,
+ 			  struct dsa_lag lag)
+ {
++	printk(KERN_ERR "%s: port=%d\n", __func__, port);
++
+ 	return mt753x_lag_refresh_portmap(ds, port, lag);
+ }
+ 
++int mt753x_port_lag_change(struct dsa_switch *ds, int port)
++{
++	struct dsa_port *dp = dsa_to_port(ds, port);
++
++	printk(KERN_ERR "%s: port=%d, enabled=%d\n", __func__, port, dp->lag_tx_enabled);
++
++	return 0;
++}
++
+ static int mt753x_get_mac_eee(struct dsa_switch *ds, int port,
+ 			      struct ethtool_keee *e)
+ {
+@@ -3324,6 +3358,8 @@ const struct dsa_switch_ops mt7530_switch_ops = {
+ 	.port_fdb_add		= mt7530_port_fdb_add,
+ 	.port_fdb_del		= mt7530_port_fdb_del,
+ 	.port_fdb_dump		= mt7530_port_fdb_dump,
++	.lag_fdb_add		= mt7530_lag_fdb_add,
++	.lag_fdb_del		= mt7530_lag_fdb_del,
+ 	.port_mdb_add		= mt7530_port_mdb_add,
+ 	.port_mdb_del		= mt7530_port_mdb_del,
+ 	.port_vlan_filtering	= mt7530_port_vlan_filtering,
+@@ -3334,6 +3370,7 @@ const struct dsa_switch_ops mt7530_switch_ops = {
+ 	.phylink_get_caps	= mt753x_phylink_get_caps,
+ 	.port_lag_join		= mt753x_port_lag_join,
+ 	.port_lag_leave		= mt753x_port_lag_leave,
++	.port_lag_change	= mt753x_port_lag_change,
+ 	.get_mac_eee		= mt753x_get_mac_eee,
+ 	.set_mac_eee		= mt753x_set_mac_eee,
+ 	.conduit_state_change	= mt753x_conduit_state_change,
+-- 
+2.39.5
+
