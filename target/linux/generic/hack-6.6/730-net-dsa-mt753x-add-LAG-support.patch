@@ -1,4 +1,4 @@
-From 9d7ebe0e1ad41512121025a2058336fb4e6989fa Mon Sep 17 00:00:00 2001
+From 0e4e497a98fd35784e1c2c0df615743ae77b3f4f Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 30 Apr 2023 22:31:35 +0200
 Subject: [PATCH] net: dsa: mt753x: add LAG support
@@ -6,16 +6,37 @@ Subject: [PATCH] net: dsa: mt753x: add LAG support
 Add LAG support to this switch. In Documentation this is described as
 trunk mode. A max of 3 LAGs are supported and each can support up to 2
 port. The current tx mode supported is Hash mode.
+When no port are present in the trunk, the trunk is disabled in the
+switch.
+When a port is disconnected, the traffic is redirected to the other
+available port.
+The hash mode is global and each LAG require to have the same hash mode
+set. To change the hash mode when multiple LAG are configured, it's
+required to remove each LAG and set the desired hash mode to the last.
+An error is printed when it's asked to set a not supported hadh mode.
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- drivers/net/dsa/mt7530.c | 144 +++++++++++++++++++++++++++++++++++++++
- drivers/net/dsa/mt7530.h |  17 +++++
- 2 files changed, 161 insertions(+)
+ drivers/net/dsa/mt7530.c | 148 +++++++++++++++++++++++++++++++++++++++
+ drivers/net/dsa/mt7530.h |  26 +++++++
+ 2 files changed, 174 insertions(+)
 
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index d84ee1b419a6..2bf196c9fa07 100644
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -3054,9 +3054,151 @@ mt753x_setup(struct dsa_switch *ds)
+@@ -2582,6 +2582,10 @@ mt7531_setup_common(struct dsa_switch *ds)
+ 			   PVC_EG_TAG(MT7530_VLAN_EG_CONSISTENT));
+ 	}
+ 
++	/* Disable learings on LAGs */
++	for (i = 0; i < MT7530_NUM_LAGS; i++)
++		mt7530_write(priv, MT7530_PTGSC(i), SA_CNT_EN);
++
+ 	/* Allow mirroring frames received on the local port (monitor port). */
+ 	mt7530_set(priv, MT753X_AGC, LOCAL_EN);
+ 
+@@ -3081,9 +3085,151 @@ mt753x_setup(struct dsa_switch *ds)
  			mt7530_free_irq(priv);
  	}
  
@@ -165,9 +186,9 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 +}
 +
  static int mt753x_get_mac_eee(struct dsa_switch *ds, int port,
- 			      struct ethtool_eee *e)
+ 			      struct ethtool_keee *e)
  {
-@@ -3163,6 +3305,8 @@ const struct dsa_switch_ops mt7530_switc
+@@ -3190,6 +3336,8 @@ const struct dsa_switch_ops mt7530_switch_ops = {
  	.port_mirror_add	= mt753x_port_mirror_add,
  	.port_mirror_del	= mt753x_port_mirror_del,
  	.phylink_get_caps	= mt753x_phylink_get_caps,
@@ -175,7 +196,9 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 +	.port_lag_leave		= mt753x_port_lag_leave,
  	.get_mac_eee		= mt753x_get_mac_eee,
  	.set_mac_eee		= mt753x_set_mac_eee,
- 	.master_state_change	= mt753x_conduit_state_change,
+ 	.conduit_state_change	= mt753x_conduit_state_change,
+diff --git a/drivers/net/dsa/mt7530.h b/drivers/net/dsa/mt7530.h
+index 6ad33a9f6b1d..03acb5a651cd 100644
 --- a/drivers/net/dsa/mt7530.h
 +++ b/drivers/net/dsa/mt7530.h
 @@ -10,6 +10,8 @@
@@ -187,7 +210,7 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
  
  #define MTK_HDR_LEN	4
  #define MT7530_MAX_MTU	(15 * 1024 - ETH_HLEN - ETH_FCS_LEN - MTK_HDR_LEN)
-@@ -242,6 +244,20 @@ enum mt7530_vlan_egress_attr {
+@@ -248,6 +250,29 @@ enum mt7530_vlan_egress_attr {
  #define  AGE_UNIT_MAX			0xfff
  #define  AGE_UNIT(x)			(AGE_UNIT_MASK & (x))
  
@@ -203,12 +226,21 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 +
 +#define MT7530_PTGC(x)			(0x108 + ((x) * 0x4))
 +#define  GRP_PORT(x, y)			((x) << (4 * (y) + 8))
++#define  SA_LRN_PORT			GENMASK(5, 4)
++#define  SA_LRN_PORT_INGRESS		(0 << 4)
++#define  SA_LRN_PORT_GRP_PORT0		(1 << 4)
++#define  SA_LRN_PORT_GRP_PORT1		(2 << 4)
++#define  LINK_DOWN			BIT(1)
 +#define  TRUNK_EN			BIT(0)
++
++#define MT7530_PTGSC(x)			(0x114 + ((x) * 0x4))
++#define  MAX_SA_CNT(x)			((x) << 3)
++#define  SA_CNT_EN			BIT(0)
 +
  /* Register for port STP state control */
  #define MT7530_SSP_P(x)			(0x2000 + ((x) * 0x100))
  #define  FID_PST(fid, state)		(((state) & 0x3) << ((fid) * 2))
-@@ -816,6 +832,7 @@ struct mt7530_priv {
+@@ -826,6 +851,7 @@ struct mt7530_priv {
  	bool			p5_sgmii;
  	u8			mirror_rx;
  	u8			mirror_tx;
@@ -216,3 +248,6 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
  	struct mt7530_port	ports[MT7530_NUM_PORTS];
  	struct mt753x_pcs	pcs[MT7530_NUM_PORTS];
  	/* protect among processes for registers access*/
+-- 
+2.39.5
+
