@@ -1,0 +1,74 @@
+From ec5c04abbb3bd15f14eeebefd5287790f84970a8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
+Date: Sat, 27 Jul 2024 13:48:28 +0200
+Subject: [PATCH] arm64: dts: mediatek: mt7981: add SPI controllers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MT7981 (Filogic 820) has three on-SoC SPI controllers.
+
+Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Link: https://lore.kernel.org/r/20240727114828.29558-2-zajec5@gmail.com
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 42 +++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+index 64aeeb24efac..b096009ef99c 100644
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -109,6 +109,48 @@ i2c@11007000 {
+ 			status = "disabled";
+ 		};
+ 
++		spi@11009000 {
++			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
++			reg = <0 0x11009000 0 0x1000>;
++			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&topckgen CLK_TOP_CB_M_D2>,
++				 <&topckgen CLK_TOP_SPI_SEL>,
++				 <&infracfg CLK_INFRA_SPI2_CK>,
++				 <&infracfg CLK_INFRA_SPI2_HCK_CK>;
++			clock-names = "parent-clk", "sel-clk", "spi-clk", "hclk";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
++		spi@1100a000 {
++			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
++			reg = <0 0x1100a000 0 0x1000>;
++			interrupts = <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&topckgen CLK_TOP_CB_M_D2>,
++				 <&topckgen CLK_TOP_SPI_SEL>,
++				 <&infracfg CLK_INFRA_SPI0_CK>,
++				 <&infracfg CLK_INFRA_SPI0_HCK_CK>;
++			clock-names = "parent-clk", "sel-clk", "spi-clk", "hclk";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
++		spi@1100b000 {
++			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
++			reg = <0 0x1100b000 0 0x1000>;
++			interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&topckgen CLK_TOP_CB_M_D2>,
++				 <&topckgen CLK_TOP_SPI_SEL>,
++				 <&infracfg CLK_INFRA_SPI1_CK>,
++				 <&infracfg CLK_INFRA_SPI1_HCK_CK>;
++			clock-names = "parent-clk", "sel-clk", "spi-clk", "hclk";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
+ 		pio: pinctrl@11d00000 {
+ 			compatible = "mediatek,mt7981-pinctrl";
+ 			reg = <0 0x11d00000 0 0x1000>,
+-- 
+2.45.2
+

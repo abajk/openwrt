@@ -1,0 +1,39 @@
+From 454880d6168cc908d5f45a81a9aa6bdddf2ebc55 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
+Date: Tue, 14 May 2024 03:51:54 +0200
+Subject: [PATCH] arm64: dts: mediatek: mt7981: add efuse block
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MT7981 (Filogic 820) uses efuse for storing calibration data.
+
+Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Link: https://lore.kernel.org/r/20240514015154.11206-2-zajec5@gmail.com
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+index 8a6263cc569c..0fc7c6d33d72 100644
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -116,6 +116,13 @@ pio: pinctrl@11d00000 {
+ 			#interrupt-cells = <2>;
+ 		};
+ 
++		efuse@11f20000 {
++			compatible = "mediatek,mt7981-efuse", "mediatek,efuse";
++			reg = <0 0x11f20000 0 0x1000>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++		};
++
+ 		clock-controller@15000000 {
+ 			compatible = "mediatek,mt7981-ethsys", "syscon";
+ 			reg = <0 0x15000000 0 0x1000>;
+-- 
+2.45.2
+

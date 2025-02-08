@@ -1,0 +1,79 @@
+From 8f5a9d6b304a6599d5dfb315bb0b0de9edf5dce0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
+Date: Wed, 21 Feb 2024 09:55:47 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981: add watchdog & WiFi controllers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MT7981 (Filogic 820) is a low cost version of MT7986 (Filogic 830) with
+the same watchdog controller. It also comes with on-SoC 802.11ax
+wireless.
+
+Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Link: https://lore.kernel.org/r/20240221085547.27840-1-zajec5@gmail.com
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 26 ++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+index 95c6fe888083..5674ac81d1f8 100644
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -2,6 +2,7 @@
+ 
+ #include <dt-bindings/clock/mediatek,mt7981-clk.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/reset/mt7986-resets.h>
+ 
+ / {
+ 	compatible = "mediatek,mt7981b";
+@@ -62,12 +63,19 @@ infracfg: clock-controller@10001000 {
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		clock-controller@1001b000 {
++		topckgen: clock-controller@1001b000 {
+ 			compatible = "mediatek,mt7981-topckgen", "syscon";
+ 			reg = <0 0x1001b000 0 0x1000>;
+ 			#clock-cells = <1>;
+ 		};
+ 
++		watchdog: watchdog@1001c000 {
++			compatible = "mediatek,mt7986-wdt";
++			reg = <0 0x1001c000 0 0x1000>;
++			interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
++			#reset-cells = <1>;
++		};
++
+ 		clock-controller@1001e000 {
+ 			compatible = "mediatek,mt7981-apmixedsys";
+ 			reg = <0 0x1001e000 0 0x1000>;
+@@ -114,6 +122,22 @@ clock-controller@15000000 {
+ 			#clock-cells = <1>;
+ 			#reset-cells = <1>;
+ 		};
++
++		wifi@18000000 {
++			compatible = "mediatek,mt7981-wmac";
++			reg = <0 0x18000000 0 0x1000000>,
++			      <0 0x10003000 0 0x1000>,
++			      <0 0x11d10000 0 0x1000>;
++			interrupts = <GIC_SPI 213 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 214 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 216 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&topckgen CLK_TOP_NETSYS_MCU_SEL>,
++				 <&topckgen CLK_TOP_AP2CNN_HOST_SEL>;
++			clock-names = "mcu", "ap2conn";
++			resets = <&watchdog MT7986_TOPRGU_CONSYS_SW_RST>;
++			reset-names = "consys";
++		};
+ 	};
+ 
+ 	timer {
+-- 
+2.45.2
+
