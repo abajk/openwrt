@@ -1,0 +1,174 @@
+From cf29427573ccedcbbc269cebbea253ad90439129 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
+Date: Thu, 11 Jan 2024 11:39:28 +0100
+Subject: [PATCH] arm64: dts: mediatek: Add initial MT7981B and Xiaomi AX3000T
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MT7981B (AKA MediaTek Filogic 820) is a dual-core ARM Cortex-A53 SoC.
+One of market devices using this SoC is Xiaomi AX3000T.
+
+This is initial contribution with basic SoC support. More hardware block
+will get added later. Some will need their bindings (like auxadc).
+
+Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Link: https://lore.kernel.org/r/20240111103928.721-3-zajec5@gmail.com
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/Makefile         |   1 +
+ .../dts/mediatek/mt7981b-xiaomi-ax3000t.dts   |  15 +++
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi     | 105 ++++++++++++++++++
+ 3 files changed, 121 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt7981b-xiaomi-ax3000t.dts
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+
+diff --git a/arch/arm64/boot/dts/mediatek/Makefile b/arch/arm64/boot/dts/mediatek/Makefile
+index 1e6f91731e92..8cf8d15ca0bb 100644
+--- a/arch/arm64/boot/dts/mediatek/Makefile
++++ b/arch/arm64/boot/dts/mediatek/Makefile
+@@ -8,6 +8,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-x20-dev.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-rfb1.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-bananapi-bpi-r64.dtb
++dtb-$(CONFIG_ARCH_MEDIATEK) += mt7981b-xiaomi-ax3000t.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7986a-bananapi-bpi-r3.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7986a-bananapi-bpi-r3-emmc.dtbo
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7986a-bananapi-bpi-r3-nand.dtbo
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b-xiaomi-ax3000t.dts b/arch/arm64/boot/dts/mediatek/mt7981b-xiaomi-ax3000t.dts
+new file mode 100644
+index 000000000000..a314c3e05e50
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt7981b-xiaomi-ax3000t.dts
+@@ -0,0 +1,15 @@
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
++
++/dts-v1/;
++
++#include "mt7981b.dtsi"
++
++/ {
++	compatible = "xiaomi,ax3000t", "mediatek,mt7981b";
++	model = "Xiaomi AX3000T";
++
++	memory@40000000 {
++		reg = <0 0x40000000 0 0x10000000>;
++		device_type = "memory";
++	};
++};
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+new file mode 100644
+index 000000000000..4feff3d1c5f4
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -0,0 +1,105 @@
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
++
++#include <dt-bindings/clock/mediatek,mt7981-clk.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++
++/ {
++	compatible = "mediatek,mt7981b";
++	interrupt-parent = <&gic>;
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			compatible = "arm,cortex-a53";
++			reg = <0x0>;
++			device_type = "cpu";
++			enable-method = "psci";
++		};
++
++		cpu@1 {
++			compatible = "arm,cortex-a53";
++			reg = <0x1>;
++			device_type = "cpu";
++			enable-method = "psci";
++		};
++	};
++
++	oscillator-40m {
++		compatible = "fixed-clock";
++		clock-frequency = <40000000>;
++		clock-output-names = "clkxtal";
++		#clock-cells = <0>;
++	};
++
++	psci {
++		compatible = "arm,psci-1.0";
++		method = "smc";
++	};
++
++	soc {
++		compatible = "simple-bus";
++		ranges;
++		#address-cells = <2>;
++		#size-cells = <2>;
++
++		gic: interrupt-controller@c000000 {
++			compatible = "arm,gic-v3";
++			reg = <0 0x0c000000 0 0x40000>,  /* GICD */
++			      <0 0x0c080000 0 0x200000>; /* GICR */
++			interrupt-parent = <&gic>;
++			interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-controller;
++			#interrupt-cells = <3>;
++		};
++
++		infracfg: clock-controller@10001000 {
++			compatible = "mediatek,mt7981-infracfg", "syscon";
++			reg = <0 0x10001000 0 0x1000>;
++			#clock-cells = <1>;
++		};
++
++		clock-controller@1001b000 {
++			compatible = "mediatek,mt7981-topckgen", "syscon";
++			reg = <0 0x1001b000 0 0x1000>;
++			#clock-cells = <1>;
++		};
++
++		clock-controller@1001e000 {
++			compatible = "mediatek,mt7981-apmixedsys";
++			reg = <0 0x1001e000 0 0x1000>;
++			#clock-cells = <1>;
++		};
++
++		pwm@10048000 {
++			compatible = "mediatek,mt7981-pwm";
++			reg = <0 0x10048000 0 0x1000>;
++			clocks = <&infracfg CLK_INFRA_PWM_STA>,
++				<&infracfg CLK_INFRA_PWM_HCK>,
++				<&infracfg CLK_INFRA_PWM1_CK>,
++				<&infracfg CLK_INFRA_PWM2_CK>,
++				<&infracfg CLK_INFRA_PWM3_CK>;
++			clock-names = "top", "main", "pwm1", "pwm2", "pwm3";
++			#pwm-cells = <2>;
++		};
++
++		clock-controller@15000000 {
++			compatible = "mediatek,mt7981-ethsys", "syscon";
++			reg = <0 0x15000000 0 0x1000>;
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++	};
++
++	timer {
++		compatible = "arm,armv8-timer";
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
++			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
++			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
++			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
++	};
++};
+-- 
+2.45.2
+

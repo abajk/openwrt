@@ -1,0 +1,54 @@
+From 62b24c7fdf0a039814e3eed33de0dced3fc10aa4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <rafal@milecki.pl>
+Date: Sun, 17 Mar 2024 23:32:05 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981: add pinctrl
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MT7981 contains on-SoC PIN controller that is also a GPIO provider.
+
+Signed-off-by: Rafał Miłecki <rafal@milecki.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Link: https://lore.kernel.org/r/20240317223206.22033-4-zajec5@gmail.com
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+index 4feff3d1c5f4..95c6fe888083 100644
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -86,6 +86,28 @@ pwm@10048000 {
+ 			#pwm-cells = <2>;
+ 		};
+ 
++		pio: pinctrl@11d00000 {
++			compatible = "mediatek,mt7981-pinctrl";
++			reg = <0 0x11d00000 0 0x1000>,
++			      <0 0x11c00000 0 0x1000>,
++			      <0 0x11c10000 0 0x1000>,
++			      <0 0x11d20000 0 0x1000>,
++			      <0 0x11e00000 0 0x1000>,
++			      <0 0x11e20000 0 0x1000>,
++			      <0 0x11f00000 0 0x1000>,
++			      <0 0x11f10000 0 0x1000>,
++			      <0 0x1000b000 0 0x1000>;
++			reg-names = "gpio", "iocfg_rt", "iocfg_rm", "iocfg_rb", "iocfg_lb",
++				    "iocfg_bl", "iocfg_tm", "iocfg_tl", "eint";
++			interrupt-controller;
++			interrupts = <GIC_SPI 225 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-parent = <&gic>;
++			gpio-ranges = <&pio 0 0 56>;
++			gpio-controller;
++			#gpio-cells = <2>;
++			#interrupt-cells = <2>;
++		};
++
+ 		clock-controller@15000000 {
+ 			compatible = "mediatek,mt7981-ethsys", "syscon";
+ 			reg = <0 0x15000000 0 0x1000>;
+-- 
+2.45.2
+
