@@ -79,6 +79,54 @@
 	leds {
 		compatible = "gpio-leds";
 
+		switch-0 {
+			label = "green:switch0";
+			gpios = <&switch 0 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-1 {
+			label = "green:switch1";
+			gpios = <&switch 1 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-2 {
+			label = "green:switch2";
+			gpios = <&switch 2 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-3 {
+			label = "green:switch3";
+			gpios = <&switch 3 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-4 {
+			label = "green:switch4";
+			gpios = <&switch 4 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-5 {
+			label = "green:switch5";
+			gpios = <&switch 5 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-6 {
+			label = "green:switch6";
+			gpios = <&switch 6 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-7 {
+			label = "green:switch7";
+			gpios = <&switch 7 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
 		led_green_wifi24g {
 			label = "green:wifi24g";
 			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
@@ -243,10 +291,12 @@
 			};
 		};
 
-		switch@1f {
+		switch: switch@1f {
 			compatible = "mediatek,mt7531";
 			reg = <31>;
 			reset-gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
 
 			ports {
 				#address-cells = <1>;
@@ -255,16 +305,19 @@
 				port@1 {
 					reg = <1>;
 					label = "lan2";
+					phy = <&phy1>;
 				};
 
 				port@2 {
 					reg = <2>;
 					label = "lan3";
+					phy = <&phy2>;
 				};
 
 				port@3 {
 					reg = <3>;
 					label = "lan4";
+					phy = <&phy3>;
 				};
 
 				port@5 {
@@ -283,6 +336,59 @@
 						speed = <2500>;
 						full-duplex;
 						pause;
+					};
+				};
+			};
+
+			mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				phy1: phy@1 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					reg = <1>;
+
+					leds {
+						#address-cells = <1>;
+						#size-cells = <0>;
+
+						led0@0 {
+							reg = <0>;
+							color = <LED_COLOR_ID_GREEN>;
+							function = LED_FUNCTION_LAN;
+						};
+					};
+				};
+
+				phy2: phy@2 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					reg = <2>;
+
+					leds {
+						#address-cells = <1>;
+						#size-cells = <0>;
+
+						led0@0 {
+							reg = <0>;
+							color = <LED_COLOR_ID_GREEN>;
+							function = LED_FUNCTION_LAN;
+						};
+					};
+				};
+
+				phy3: phy@3 {
+					compatible = "ethernet-phy-ieee802.3-c22";
+					reg = <3>;
+
+					leds {
+						#address-cells = <1>;
+						#size-cells = <0>;
+
+						led0@0 {
+							reg = <0>;
+							color = <LED_COLOR_ID_GREEN>;
+							function = LED_FUNCTION_LAN;
+						};
 					};
 				};
 			};

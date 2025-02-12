@@ -1,0 +1,46 @@
+From ac3599aedcbb037254c2244806cd7bb464e8d1ba Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 22 Mar 2025 22:31:56 +0100
+Subject: [PATCH] net: dsa: mt7530: enable LED support on MT7531
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/dsa/lantiq_gswip.c | 2 +-
+ drivers/net/dsa/mt7530.c       | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/dsa/lantiq_gswip.c b/drivers/net/dsa/lantiq_gswip.c
+index 6eb3140d4044..4622bf3acf83 100644
+--- a/drivers/net/dsa/lantiq_gswip.c
++++ b/drivers/net/dsa/lantiq_gswip.c
+@@ -1900,7 +1900,7 @@ static int gswip_gphy_fw_load(struct gswip_priv *priv, struct gswip_gphy_fw *gph
+ {
+ 	struct device *dev = priv->dev;
+ 	const struct firmware *fw;
+-	void *fw_addr;
++	void *fw_addr;;;;
+ 	dma_addr_t dma_addr;
+ 	dma_addr_t dev_addr;
+ 	size_t size;
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index 5883eb93efb1..855b052c33c5 100644
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -2688,6 +2688,14 @@ mt7531_setup(struct dsa_switch *ds)
+ 	if (ret)
+ 		return ret;
+ 
++#ifdef CONFIG_GPIOLIB
++	if (of_property_read_bool(priv->dev->of_node, "gpio-controller")) {
++		ret = mt7530_setup_gpio(priv);
++		if (ret)
++			return ret;
++	}
++#endif /* CONFIG_GPIOLIB */
++
+ 	ds->assisted_learning_on_cpu_port = true;
+ 	ds->mtu_enforcement_ingress = true;
+ 
+-- 
+2.45.2
+
