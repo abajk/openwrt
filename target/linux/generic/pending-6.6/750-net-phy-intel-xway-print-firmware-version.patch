@@ -1,0 +1,143 @@
+From 77f6fc83a42baa748aecaaf15930338510092876 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 23 Feb 2025 20:56:48 +0100
+Subject: [PATCH] net: phy: intel-xway: print firmware version
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/phy/intel-xway.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/drivers/net/phy/intel-xway.c b/drivers/net/phy/intel-xway.c
+index a44771e8acdc..2cce6731c0b7 100644
+--- a/drivers/net/phy/intel-xway.c
++++ b/drivers/net/phy/intel-xway.c
+@@ -14,6 +14,7 @@
+ #define XWAY_MDIO_IMASK			0x19	/* interrupt mask */
+ #define XWAY_MDIO_ISTAT			0x1A	/* interrupt status */
+ #define XWAY_MDIO_LED			0x1B	/* led control */
++#define PHY_FWV				0x1E	/* firmware version */
+ 
+ #define XWAY_MDIO_MIICTRL_RXSKEW_MASK	GENMASK(14, 12)
+ #define XWAY_MDIO_MIICTRL_TXSKEW_MASK	GENMASK(10, 8)
+@@ -158,6 +159,10 @@
+ #define XWAY_MMD_LEDxH(idx)		(XWAY_MMD_LED0H + 2 * (idx))
+ #define XWAY_MMD_LEDxL(idx)		(XWAY_MMD_LED0L + 2 * (idx))
+ 
++#define PHY_FWV_REL_MASK		BIT(15)
++#define PHY_FWV_MAJOR_MASK		GENMASK(11, 8)
++#define PHY_FWV_MINOR_MASK		GENMASK(7, 0)
++
+ #define PHY_ID_PHY11G_1_3		0x030260D1
+ #define PHY_ID_PHY22F_1_3		0x030260E1
+ #define PHY_ID_PHY11G_1_4		0xD565A400
+@@ -302,6 +307,26 @@ static int xway_gphy_config_init(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int xway_gphy_probe(struct phy_device *phydev)
++{
++	u8 fw_major, fw_minor;
++	int fw_version;
++
++	fw_version = phy_read(phydev, PHY_FWV);
++	if (fw_version < 0)
++		return fw_version;
++	fw_major = FIELD_GET(PHY_FWV_MAJOR_MASK, fw_version);
++	fw_minor = FIELD_GET(PHY_FWV_MINOR_MASK, fw_version);
++
++
++	/* Show GPY PHY FW version in dmesg */
++	phydev_info(phydev, "Firmware Version: %d.%d (0x%04X%s)\n",
++		    fw_major, fw_minor, fw_version,
++		    fw_version & PHY_FWV_REL_MASK ? "" : " test version");
++
++	return 0;
++}
++
+ static int xway_gphy14_config_aneg(struct phy_device *phydev)
+ {
+ 	int reg, err;
+@@ -539,6 +564,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.3",
+ 		/* PHY_GBIT_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -555,6 +581,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.3",
+ 		/* PHY_BASIC_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -571,6 +598,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.4",
+ 		/* PHY_GBIT_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -587,6 +615,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.4",
+ 		/* PHY_BASIC_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -603,6 +632,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.5 / v1.6",
+ 		/* PHY_GBIT_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+@@ -618,6 +648,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.5 / v1.6",
+ 		/* PHY_BASIC_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+@@ -633,6 +664,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY11G (xRX v1.1 integrated)",
+ 		/* PHY_GBIT_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+@@ -648,6 +680,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY22F (xRX v1.1 integrated)",
+ 		/* PHY_BASIC_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+@@ -663,6 +696,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY11G (xRX v1.2 integrated)",
+ 		/* PHY_GBIT_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+@@ -678,6 +712,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.name		= "Intel XWAY PHY22F (xRX v1.2 integrated)",
+ 		/* PHY_BASIC_FEATURES */
+ 		.config_init	= xway_gphy_config_init,
++		.probe		= xway_gphy_probe,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+ 		.suspend	= genphy_suspend,
+-- 
+2.45.2
+

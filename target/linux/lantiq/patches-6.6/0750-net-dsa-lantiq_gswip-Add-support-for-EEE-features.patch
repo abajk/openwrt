@@ -1,0 +1,122 @@
+From 9872230282160d57c48f3302d20fe19fb5fa04e6 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Mon, 19 Apr 2021 23:16:31 +0200
+Subject: [PATCH] net: dsa: lantiq_gswip: Add support for EEE features
+
+Add support for EEE features.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/dsa/lantiq_gswip.c | 54 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/net/dsa/lantiq_gswip.c b/drivers/net/dsa/lantiq_gswip.c
+index 6eb3140d4044..a358cf2485f2 100644
+--- a/drivers/net/dsa/lantiq_gswip.c
++++ b/drivers/net/dsa/lantiq_gswip.c
+@@ -90,6 +90,7 @@
+ 					 GSWIP_MDIO_PHY_LINK_MASK | \
+ 					 GSWIP_MDIO_PHY_SPEED_MASK | \
+ 					 GSWIP_MDIO_PHY_FDUP_MASK)
++#define GSWIP_MDIO_EEEp(p)		(0x1C + (p))
+ 
+ /* GSWIP MII Registers */
+ #define GSWIP_MII_CFGp(p)		(0x2 * (p))
+@@ -195,6 +196,9 @@
+ #define GSWIP_PCE_DEFPVID(p)		(0x486 + ((p) * 0xA))
+ 
+ #define GSWIP_MAC_FLEN			0x8C5
++#define GSWIP_MAC_PSTATp(p)		(0x900 + ((p) * 0xC))
++#define  GSWIP_MAC_PSTAT_TXLPI		BIT(1)	/* Transmit Low-power Idle Status */
++#define  GSWIP_MAC_PSTAT_RXLPI		BIT(0)	/* Receive Low-power Idle Status */
+ #define GSWIP_MAC_CTRL_0p(p)		(0x903 + ((p) * 0xC))
+ #define  GSWIP_MAC_CTRL_0_PADEN		BIT(8)
+ #define  GSWIP_MAC_CTRL_0_FCS_EN	BIT(7)
+@@ -215,6 +219,12 @@
+ #define GSWIP_MAC_CTRL_2p(p)		(0x905 + ((p) * 0xC))
+ #define GSWIP_MAC_CTRL_2_LCHKL		BIT(2) /* Frame Length Check Long Enable */
+ #define GSWIP_MAC_CTRL_2_MLEN		BIT(3) /* Maximum Untagged Frame Lnegth */
++#define GSWIP_MAC_CTRL_4p(p)		(0x907 + ((p) * 0xC))
++#define  GSWIP_MAC_CTRL_4_LPIEN		BIT(7) /* LPI Mode Enable */
++#define  GSWIP_MAC_CTRL_4_WAIT_MASK	0x007F /* LPI Wait Time */
++
++#define GSWIP_FDMA_CTRL			0xA40
++#define GSWIP_FDMA_CTRL_LPI_MODE	(0x4 < 3)
+ 
+ /* Ethernet Switch Fetch DMA Port Control Register */
+ #define GSWIP_FDMA_PCTRLp(p)		(0xA80 + ((p) * 0x6))
+@@ -884,6 +894,9 @@ static int gswip_setup(struct dsa_switch *ds)
+ 		return err;
+ 	}
+ 
++	/* LPI Request controllerd by data available for port */
++	gswip_switch_w(priv, GSWIP_FDMA_CTRL_LPI_MODE, GSWIP_FDMA_CTRL);
++
+ 	ds->mtu_enforcement_ingress = true;
+ 
+ 	ds->configure_vlan_while_not_filtering = false;
+@@ -1460,6 +1473,43 @@ static int gswip_port_max_mtu(struct dsa_switch *ds, int port)
+ 	return GSWIP_MAX_PACKET_LENGTH - VLAN_ETH_HLEN - ETH_FCS_LEN;
+ }
+ 
++static int
++gswip_set_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
++{
++	struct gswip_priv *priv = ds->priv;
++	u16 set;
++
++	if (e->tx_lpi_timer > 0x7F)
++		return -EINVAL;
++
++	set = (e->tx_lpi_timer | (e->tx_lpi_timer << 8));
++
++	set |= (e->tx_lpi_enabled << 7);
++	gswip_switch_w(priv, set, GSWIP_MAC_CTRL_4p(port));
++
++	return 0;
++}
++
++static int
++gswip_get_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
++{
++	struct gswip_priv *priv = ds->priv;
++	u16 reg;
++
++	reg = gswip_switch_r(priv, GSWIP_MAC_PSTATp(port));
++	if (reg & (GSWIP_MAC_PSTAT_RXLPI | GSWIP_MAC_PSTAT_TXLPI)) {
++		printk(KERN_ERR "%s:1 reg=%04x\n", __func__, reg);
++//		e->eee_active = true;
++	}
++
++	reg = gswip_switch_r(priv, GSWIP_MAC_CTRL_4p(port));
++	printk(KERN_ERR "%s:2 reg=%04x\n", __func__, reg);
++	e->tx_lpi_enabled = ((reg & GSWIP_MAC_CTRL_4_LPIEN) >> 7);
++	e->tx_lpi_timer = (reg & GSWIP_MAC_CTRL_4_WAIT_MASK);
++
++	return 0;
++}
++
+ static int gswip_port_change_mtu(struct dsa_switch *ds, int port, int new_mtu)
+ {
+ 	struct gswip_priv *priv = ds->priv;
+@@ -1847,6 +1897,8 @@ static const struct dsa_switch_ops gswip_xrx200_switch_ops = {
+ 	.get_strings		= gswip_get_strings,
+ 	.get_ethtool_stats	= gswip_get_ethtool_stats,
+ 	.get_sset_count		= gswip_get_sset_count,
++	.get_mac_eee		= gswip_get_mac_eee,
++	.set_mac_eee		= gswip_set_mac_eee,
+ };
+ 
+ static const struct dsa_switch_ops gswip_xrx300_switch_ops = {
+@@ -1870,6 +1922,8 @@ static const struct dsa_switch_ops gswip_xrx300_switch_ops = {
+ 	.get_strings		= gswip_get_strings,
+ 	.get_ethtool_stats	= gswip_get_ethtool_stats,
+ 	.get_sset_count		= gswip_get_sset_count,
++	.get_mac_eee		= gswip_get_mac_eee,
++	.set_mac_eee		= gswip_set_mac_eee,
+ };
+ 
+ static const struct xway_gphy_match_data xrx200a1x_gphy_data = {
+-- 
+2.45.2
+
