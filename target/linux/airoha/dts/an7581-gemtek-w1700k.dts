@@ -327,13 +327,13 @@
 &eth {
 	status = "okay";
 
-	/*
 	gdm2: ethernet@2 {
 		status = "okay";
 
 		label = "wan";
 		phy-mode = "usxgmii";
 		phy-connection-type = "usxgmii";
+		phy = <&phy8>;
 
 		nvmem-cells = <&wan_mac 0>;
 		nvmem-cell-names = "mac-address";
@@ -345,11 +345,11 @@
 		label = "10g-lan1";
 		phy-mode = "usxgmii";
 		phy-connection-type = "usxgmii";
+		phy = <&phy0>;
 
 		nvmem-cells = <&lan_mac 0>;
 		nvmem-cell-names = "mac-address";
 	};
-	*/
 };
 
 &gdm1 {
@@ -365,7 +365,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&mdio_pins>;
 
-	/*
 	mdio {
 		gsw_phy5: ethernet-phy@5 {
 			compatible = "ethernet-phy-ieee802.3-c45";
@@ -377,7 +376,6 @@
 			reg = <8>;
 		};
 	};
-	*/
 };
 
 &gsw_phy1 {
