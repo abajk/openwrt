@@ -1,0 +1,63 @@
+From e821ec54a13067446ab4aca4ba33e265ff09b813 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 15 Mar 2025 15:00:32 +0100
+Subject: [PATCH 1/2] iwinfo: print HT operation only if present
+
+HT Operation is empty in the 6GHz band, where only 802.11 ax (HE)
+and 802.11 be (EHT) are allowed, and in 802.11 legacy modes.
+
+Example:
+Cell 19 - Address: xx:xx:xx:xx:xx:xx
+          ESSID: "OpenWrt"
+          Mode: Master  Frequency: 5.955 GHz  Band: 6 GHz  Channel: 1
+          Signal: -20 dBm  Quality: 70/70
+          Encryption: WPA3 SAE (CCMP)
+          HT Operation:
+                    Primary Channel: 0
+                    Secondary Channel Offset: no secondary
+                    Channel Width: 20 MHz
+          HE Operation:
+                    Center Frequency 1: 7
+                    Center Frequency 2: 15
+                    Channel Width: 160 MHz
+          EHT Operation:
+                    Center Frequency 1: 15
+                    Center Frequency 2: 31
+                    Channel Width: 320 MHz
+
+Fixes: ea28dfb5f957 ("iwinfo: export ht and vht operation in scan results")
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ iwinfo_cli.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/iwinfo_cli.c b/iwinfo_cli.c
+index 6f87d98..0966d1b 100644
+--- a/iwinfo_cli.c
++++ b/iwinfo_cli.c
+@@ -700,13 +700,15 @@ static void print_scanlist(const struct iwinfo_ops *iw, const char *ifname)
+ 			format_quality_max(e->quality_max));
+ 		printf("          Encryption: %s\n",
+ 			format_encryption(&e->crypto));
+-		printf("          HT Operation:\n");
+-		printf("                    Primary Channel: %d\n",
+-			e->ht_chan_info.primary_chan);
+-		printf("                    Secondary Channel Offset: %s\n",
+-			ht_secondary_offset[e->ht_chan_info.secondary_chan_off]);
+-		printf("                    Channel Width: %s\n",
+-			format_chan_width(false, e->ht_chan_info.chan_width));
++		if (e->ht_chan_info.primary_chan) {
++			printf("          HT Operation:\n");
++			printf("                    Primary Channel: %d\n",
++				e->ht_chan_info.primary_chan);
++			printf("                    Secondary Channel Offset: %s\n",
++				ht_secondary_offset[e->ht_chan_info.secondary_chan_off]);
++			printf("                    Channel Width: %s\n",
++				format_chan_width(false, e->ht_chan_info.chan_width));
++		}
+ 
+ 		if (e->vht_chan_info.center_chan_1) {
+ 			printf("          VHT Operation:\n");
+-- 
+2.45.2
+
