@@ -481,6 +481,48 @@ export function countrylist(dev) {
 	return list;
 };
 
+function scan_extension(len, ext, cell) {
+	const eht_chan_width = [ '20 MHz', '40 MHz', '80 MHz', '160 MHz', '320 MHz'];
+
+	switch(ord(ext, 0)) {
+	case 36:
+		let offset = 6;
+
+		if (!(ord(ext, 2) & 0x2)
+			break;
+
+		if (ord(ext, 1) & 0x40)
+			offset += 3;
+
+		if (ord(ext, 1) & 0x80)
+			offset += 1;
+
+		if (len - offset < 5)
+			break;
+
+		cell.he = {
+			chan_width: eht_chan_width[ord(ext, offset + 1) & 0x3],
+			center_chan_1: ord(ext, offset + 2),
+			center_chan_2: ord(ext, offset + 3),
+		};
+		break;
+
+	case 106:
+		if (!(ord(ext, 0) & 0x1))
+			break;
+
+		if (len < 8)
+			break;
+
+		cell.eht = {
+			chan_width: eht_chan_width[ord(ext, 5) & 0x7],
+			center_chan_1: ord(ext, 6),
+			center_chan_2: ord(ext, 7),
+		};
+		break;
+	}
+};
+
 export function scan(dev) {
 	const rsn_cipher = [ 'NONE', 'WEP-40', 'TKIP', 'WRAP', 'CCMP', 'WEP-104', 'AES-OCB', 'CKIP', 'GCMP', 'GCMP-256', 'CCMP-256' ];
 	const ht_chan_offset = [ 'no secondary', 'above', '[reserved]', 'below' ];
@@ -590,6 +632,10 @@ export function scan(dev) {
 					center_chan_1: ord(ie.data, 1),
 					center_chan_2: ord(ie.data, 2),
 				};
+				break;
+
+			case 255:
+				scan_extension(ie.len, ie.data, cell);
 				break;
 			};
 
