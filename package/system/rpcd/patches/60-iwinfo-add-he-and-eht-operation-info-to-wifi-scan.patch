@@ -11,11 +11,9 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
  iwinfo.c | 16 ++++++++++++++++
  1 file changed, 16 insertions(+)
 
-diff --git a/iwinfo.c b/iwinfo.c
-index ff0f38b..2a223ed 100644
 --- a/iwinfo.c
 +++ b/iwinfo.c
-@@ -437,6 +437,22 @@ rpc_iwinfo_scan(struct ubus_context *ctx, struct ubus_object *obj,
+@@ -437,6 +437,22 @@ rpc_iwinfo_scan(struct ubus_context *ctx
  				blobmsg_close_table(&buf, t);
  			}
  
@@ -38,6 +36,3 @@ index ff0f38b..2a223ed 100644
  			rpc_iwinfo_add_encryption("encryption", &e->crypto);
  
  			blobmsg_close_table(&buf, d);
--- 
-2.45.2
-
