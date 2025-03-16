@@ -239,6 +239,7 @@
 					reg = <0>;
 					color = <LED_COLOR_ID_GREEN>;
 					function = LED_FUNCTION_WAN;
+					function-enumerator = <0>;
 				};
 			};
 		};
