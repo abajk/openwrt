@@ -79,6 +79,54 @@
 	leds {
 		compatible = "gpio-leds";
 
+		switch-0 {
+			label = "green:switch0";
+			gpios = <&switch 0 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-1 {
+			label = "green:switch0";
+			gpios = <&switch 1 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-2 {
+			label = "green:switch0";
+			gpios = <&switch 2 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-3 {
+			label = "green:switch0";
+			gpios = <&switch 3 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-4 {
+			label = "green:switch0";
+			gpios = <&switch 4 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-5 {
+			label = "green:switch0";
+			gpios = <&switch 5 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-6 {
+			label = "green:switch0";
+			gpios = <&switch 6 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-7 {
+			label = "green:switch0";
+			gpios = <&switch 7 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
 		led_green_wifi24g {
 			label = "green:wifi24g";
 			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
@@ -243,10 +291,12 @@
 			};
 		};
 
-		switch@1f {
+		switch: switch@1f {
 			compatible = "mediatek,mt7531";
 			reg = <31>;
 			reset-gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
 
 			ports {
 				#address-cells = <1>;
