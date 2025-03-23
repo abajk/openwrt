@@ -1,38 +1,115 @@
-From ac3599aedcbb037254c2244806cd7bb464e8d1ba Mon Sep 17 00:00:00 2001
+From 00f7149b6b96d52fa17ca5adb2be082c1599cd6b Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sat, 22 Mar 2025 22:31:56 +0100
 Subject: [PATCH] net: dsa: mt7530: enable LED support on MT7531
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- drivers/net/dsa/lantiq_gswip.c | 2 +-
- drivers/net/dsa/mt7530.c       | 8 ++++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/dsa/mt7530.c | 91 ++++++++++++++++++++++++++++++++++++++++
+ drivers/net/dsa/mt7530.h |  6 +++
+ 2 files changed, 97 insertions(+)
 
-diff --git a/drivers/net/dsa/lantiq_gswip.c b/drivers/net/dsa/lantiq_gswip.c
-index 6eb3140d4044..4622bf3acf83 100644
---- a/drivers/net/dsa/lantiq_gswip.c
-+++ b/drivers/net/dsa/lantiq_gswip.c
-@@ -1900,7 +1900,7 @@ static int gswip_gphy_fw_load(struct gswip_priv *priv, struct gswip_gphy_fw *gph
- {
- 	struct device *dev = priv->dev;
- 	const struct firmware *fw;
--	void *fw_addr;
-+	void *fw_addr;;;;
- 	dma_addr_t dma_addr;
- 	dma_addr_t dev_addr;
- 	size_t size;
 diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
-index 5883eb93efb1..855b052c33c5 100644
+index 5883eb93efb1..a75a7bfe69f9 100644
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -2688,6 +2688,14 @@ mt7531_setup(struct dsa_switch *ds)
+@@ -2048,6 +2048,89 @@ mt7530_setup_gpio(struct mt7530_priv *priv)
+ 
+ 	return devm_gpiochip_add_data(dev, gc, priv);
+ }
++
++static int
++mt7531_gpio_get(struct gpio_chip *gc, unsigned int offset)
++{
++	struct mt7530_priv *priv = gpiochip_get_data(gc);
++	u32 bit = BIT(offset);
++
++	return !!(mt7530_read(priv, MT7531_GPIO_DIN) & bit);
++}
++
++static void
++mt7531_gpio_set(struct gpio_chip *gc, unsigned int offset, int value)
++{
++	struct mt7530_priv *priv = gpiochip_get_data(gc);
++	u32 bit = BIT(offset);
++
++	if (value)
++		mt7530_set(priv, MT7531_GPIO_DOUT, bit);
++	else
++		mt7530_clear(priv, MT7531_GPIO_DOUT, bit);
++}
++
++static int
++mt7531_gpio_get_direction(struct gpio_chip *gc, unsigned int offset)
++{
++	struct mt7530_priv *priv = gpiochip_get_data(gc);
++	u32 bit = BIT(offset);
++
++	return (mt7530_read(priv, MT7531_GPIO_DIR) & bit) ?
++		GPIO_LINE_DIRECTION_OUT : GPIO_LINE_DIRECTION_IN;
++}
++
++static int
++mt7531_gpio_direction_input(struct gpio_chip *gc, unsigned int offset)
++{
++	struct mt7530_priv *priv = gpiochip_get_data(gc);
++	u32 bit = BIT(offset);
++
++	mt7530_clear(priv, MT7531_GPIO_DIR, bit);
++
++	return 0;
++}
++
++static int
++mt7531_gpio_direction_output(struct gpio_chip *gc, unsigned int offset, int value)
++{
++	struct mt7530_priv *priv = gpiochip_get_data(gc);
++	u32 bit = BIT(offset);
++
++	mt7530_set(priv, MT7531_GPIO_DIR, bit);
++
++	if (value)
++		mt7530_set(priv, MT7531_GPIO_DOUT, bit);
++	else
++		mt7530_clear(priv, MT7531_GPIO_DOUT, bit);
++
++	return 0;
++}
++
++static int
++mt7531_setup_gpio(struct mt7530_priv *priv)
++{
++	struct device *dev = priv->dev;
++	struct gpio_chip *gc;
++
++	gc = devm_kzalloc(dev, sizeof(*gc), GFP_KERNEL);
++	if (!gc)
++		return -ENOMEM;
++
++	gc->label = "mt7531";
++	gc->parent = dev;
++	gc->owner = THIS_MODULE;
++	gc->get_direction = mt7531_gpio_get_direction;
++	gc->direction_input = mt7531_gpio_direction_input;
++	gc->direction_output = mt7531_gpio_direction_output;
++	gc->get = mt7531_gpio_get;
++	gc->set = mt7531_gpio_set;
++	gc->base = -1;
++	gc->ngpio = 27;
++	gc->can_sleep = true;
++
++	return devm_gpiochip_add_data(dev, gc, priv);
++}
+ #endif /* CONFIG_GPIOLIB */
+ 
+ static irqreturn_t
+@@ -2688,6 +2771,14 @@ mt7531_setup(struct dsa_switch *ds)
  	if (ret)
  		return ret;
  
 +#ifdef CONFIG_GPIOLIB
 +	if (of_property_read_bool(priv->dev->of_node, "gpio-controller")) {
-+		ret = mt7530_setup_gpio(priv);
++		ret = mt7531_setup_gpio(priv);
 +		if (ret)
 +			return ret;
 +	}
@@ -41,6 +118,23 @@ index 5883eb93efb1..855b052c33c5 100644
  	ds->assisted_learning_on_cpu_port = true;
  	ds->mtu_enforcement_ingress = true;
  
+diff --git a/drivers/net/dsa/mt7530.h b/drivers/net/dsa/mt7530.h
+index 448200689f49..949e50271322 100644
+--- a/drivers/net/dsa/mt7530.h
++++ b/drivers/net/dsa/mt7530.h
+@@ -616,6 +616,12 @@ enum mt7531_xtal_fsel {
+ #define MT7530_P5RGMIITXCR		0x7b04
+ #define  CSR_RGMII_TXC_CFG(x)		((x) & 0x1f)
+ 
++/* GPIO direction, 0: Input, 1: Output */
++#define MT7531_GPIO_DIR			0x7c00
++/* GPIO output value, 0: Low, 1: High */
++#define MT7531_GPIO_DOUT		0x7c04
++/* GPIO input value, 0: Low, 1: High */
++#define MT7531_GPIO_DIN			0x7c08
+ /* Registers for GPIO mode */
+ #define MT7531_GPIO_MODE0		0x7c0c
+ #define  MT7531_GPIO0_MASK		GENMASK(3, 0)
 -- 
 2.45.2
 
