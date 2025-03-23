@@ -79,51 +79,63 @@
 	leds {
 		compatible = "gpio-leds";
 
-		switch-0 {
-			label = "green:switch0";
-			gpios = <&switch 0 GPIO_ACTIVE_LOW>;
+		switch-13 {
+			label = "green:switch13";
+			gpios = <&switch 13 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-1 {
-			label = "green:switch1";
-			gpios = <&switch 1 GPIO_ACTIVE_LOW>;
+		switch-14 {
+			label = "green:switch14";
+			gpios = <&switch 14 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-2 {
-			label = "green:switch2";
-			gpios = <&switch 2 GPIO_ACTIVE_LOW>;
+		switch-15 {
+			label = "green:switch15";
+			gpios = <&switch 15 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-3 {
-			label = "green:switch3";
-			gpios = <&switch 3 GPIO_ACTIVE_LOW>;
+		switch-17 {
+			label = "green:switch17";
+			gpios = <&switch 17 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-4 {
-			label = "green:switch4";
-			gpios = <&switch 4 GPIO_ACTIVE_LOW>;
+		switch-18 {
+			label = "green:switch18";
+			gpios = <&switch 18 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-5 {
-			label = "green:switch5";
-			gpios = <&switch 5 GPIO_ACTIVE_LOW>;
+		switch-20 {
+			label = "green:switch20";
+			gpios = <&switch 20 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-6 {
-			label = "green:switch6";
-			gpios = <&switch 6 GPIO_ACTIVE_LOW>;
+		switch-21 {
+			label = "green:switch21";
+			gpios = <&switch 21 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		switch-7 {
-			label = "green:switch7";
-			gpios = <&switch 7 GPIO_ACTIVE_LOW>;
+		switch-22 {
+			label = "green:switch22";
+			gpios = <&switch 22 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-23 {
+			label = "green:switch23";
+			gpios = <&switch 23 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		switch-24 {
+			label = "green:switch24";
+			gpios = <&switch 24 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
