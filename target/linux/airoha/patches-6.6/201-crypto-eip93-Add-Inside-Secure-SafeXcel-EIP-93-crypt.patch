@@ -36,7 +36,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  .../crypto/inside-secure/eip93/eip93-main.c   | 501 ++++++++++
  .../crypto/inside-secure/eip93/eip93-main.h   | 151 +++
  .../crypto/inside-secure/eip93/eip93-regs.h   | 335 +++++++
- 18 files changed, 4056 insertions(+)
+ 18 files changed, 4058 insertions(+)
  create mode 100644 drivers/crypto/inside-secure/eip93/Kconfig
  create mode 100644 drivers/crypto/inside-secure/eip93/Makefile
  create mode 100644 drivers/crypto/inside-secure/eip93/eip93-aead.c
@@ -3183,7 +3183,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 +#endif /* _EIP93_HASH_H_ */
 --- /dev/null
 +++ b/drivers/crypto/inside-secure/eip93/eip93-main.c
-@@ -0,0 +1,501 @@
+@@ -0,0 +1,503 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2019 - 2021
@@ -3652,12 +3652,14 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 +	return 0;
 +}
 +
-+static void eip93_crypto_remove(struct platform_device *pdev)
++static int eip93_crypto_remove(struct platform_device *pdev)
 +{
 +	struct eip93_device *eip93 = platform_get_drvdata(pdev);
 +
 +	eip93_unregister_algs(ARRAY_SIZE(eip93_algs));
 +	eip93_cleanup(eip93);
++
++	return 0;
 +}
 +
 +static const struct of_device_id eip93_crypto_of_match[] = {
