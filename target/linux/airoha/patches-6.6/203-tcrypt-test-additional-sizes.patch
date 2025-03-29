@@ -1,0 +1,28 @@
+From 15346ad2595bfdcf3b5b51d5a44d324b123b9448 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 29 Mar 2025 14:20:28 +0100
+Subject: [PATCH] tcrypt: test additional sizes
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ crypto/tcrypt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+index 879fc21dcc16..b1d2f72c5b72 100644
+--- a/crypto/tcrypt.c
++++ b/crypto/tcrypt.c
+@@ -69,8 +69,8 @@ static u32 num_mb = 8;
+ static unsigned int klen;
+ static char *tvmem[TVMEMSIZE];
+ 
+-static const int block_sizes[] = { 16, 64, 128, 256, 1024, 1420, 4096, 0 };
+-static const int aead_sizes[] = { 16, 64, 256, 512, 1024, 1420, 4096, 8192, 0 };
++static const int block_sizes[] = { 16, 64, 128, 256, 1024, 1420, 4096, 8192, 16384, 0 };
++static const int aead_sizes[] = { 16, 64, 256, 512, 1024, 1420, 4096, 8192, 16384, 0 };
+ 
+ #define XBUFSIZE 8
+ #define MAX_IVLEN 32
+-- 
+2.45.2
+
