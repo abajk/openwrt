@@ -36,7 +36,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  .../crypto/inside-secure/eip93/eip93-main.c   | 501 ++++++++++
  .../crypto/inside-secure/eip93/eip93-main.h   | 151 +++
  .../crypto/inside-secure/eip93/eip93-regs.h   | 335 +++++++
- 18 files changed, 4058 insertions(+)
+ 18 files changed, 4056 insertions(+)
  create mode 100644 drivers/crypto/inside-secure/eip93/Kconfig
  create mode 100644 drivers/crypto/inside-secure/eip93/Makefile
  create mode 100644 drivers/crypto/inside-secure/eip93/eip93-aead.c
@@ -3183,7 +3183,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 +#endif /* _EIP93_HASH_H_ */
 --- /dev/null
 +++ b/drivers/crypto/inside-secure/eip93/eip93-main.c
-@@ -0,0 +1,503 @@
+@@ -0,0 +1,501 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2019 - 2021
@@ -3685,8 +3685,6 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 +
 +MODULE_AUTHOR("Richard van Schagen <vschagen@cs.com>");
 +MODULE_AUTHOR("Christian Marangi <ansuelsmth@gmail.com>");
-+MODULE_DESCRIPTION("Mediatek EIP-93 crypto engine driver");
-+MODULE_LICENSE("GPL");
 --- /dev/null
 +++ b/drivers/crypto/inside-secure/eip93/eip93-main.h
 @@ -0,0 +1,151 @@
