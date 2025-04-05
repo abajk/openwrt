@@ -1,7 +1,7 @@
-From 4f03c07c853f87c0fb74174fab8ddc67241d6b45 Mon Sep 17 00:00:00 2001
+From b5fdce507426cc66380840515421ab26bdf39b2f Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Tue, 1 Apr 2025 23:28:08 +0200
-Subject: [PATCH] iw: fix EHT capabilities on Big Endian platforms
+Subject: [PATCH 3/3] iw: fix EHT capabilities on Big Endian platforms
 
 IE fields are encoded in Little Endian and are not correctly
 printed on Big Endian platforms.
@@ -13,10 +13,10 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
  1 file changed, 16 insertions(+), 13 deletions(-)
 
 diff --git a/util.c b/util.c
-index 73ca500..e744a5b 100644
+index 1870393..f105e07 100644
 --- a/util.c
 +++ b/util.c
-@@ -1537,21 +1537,24 @@ static void __print_eht_capa(int band,
+@@ -1538,21 +1538,24 @@ static void __print_eht_capa(int band,
  	const char *pre = indent ? "\t" : "";
  	const char *mcs[] = { "0-7", "8-9", "10-11", "12-13"};
  
@@ -42,19 +42,19 @@ index 73ca500..e744a5b 100644
 -	#define PRINT_EHT_PHY_CAP_MASK(...) PRINT_EHT_CAP_MASK(phy_cap, __VA_ARGS__)
 +	#define PRINT_EHT_PHY_CAP_MASK(_idx, _shift, _mask, _str) \
 +	do { \
-+		if ((le32toh(mac_cap[_idx]) >> _shift) & _mask) \
++		if ((le32toh(phy_cap[_idx]) >> _shift) & _mask) \
 +			printf("%s\t\t\t" _str ": %d\n", pre, \
-+			       (le32toh(mac_cap[_idx]) >> _shift) & _mask); \
++			       (le32toh(phy_cap[_idx]) >> _shift) & _mask); \
 +	} while (0)
  
  	printf("%s\t\tEHT MAC Capabilities (0x", pre);
  	for (i = 0; i < 2; i++)
-@@ -1616,13 +1619,13 @@ static void __print_eht_capa(int band,
+@@ -1617,13 +1620,13 @@ static void __print_eht_capa(int band,
  		printf("%02x", ((__u8 *)mcs_set)[i]);
  	printf("):\n");
  
 -	if (!(he_phy_cap[0] & ((BIT(2) | BIT(3) | BIT(4)) << 8))){
-+	if (!(le16toh(he_phy_cap[0]) & ((BIT(2) | BIT(3) | BIT(4)) << 8))){
++	if (!(le16toh(he_phy_cap[0]) & ((BIT(2) | BIT(3) | BIT(4)) << 8))) {
  		for (i = 0; i < 4; i++)
  			printf("%s\t\tEHT bw=20 MHz, max NSS for MCS %s: Rx=%u, Tx=%u\n",
  			       pre, mcs[i],
@@ -65,7 +65,7 @@ index 73ca500..e744a5b 100644
  			for (i = 0; i < 3; i++)
  				printf("%s\t\tEHT bw <= 80 MHz, max NSS for MCS %s: Rx=%u, Tx=%u\n",
  				       pre, mcs[i + 1],
-@@ -1630,7 +1633,7 @@ static void __print_eht_capa(int band,
+@@ -1631,7 +1634,7 @@ static void __print_eht_capa(int band,
  		}
  		mcs_set += 3;
  
@@ -74,7 +74,7 @@ index 73ca500..e744a5b 100644
  			for (i = 0; i < 3; i++)
  				printf("%s\t\tEHT bw=160 MHz, max NSS for MCS %s: Rx=%u, Tx=%u\n",
  				       pre, mcs[i + 1],
-@@ -1638,7 +1641,7 @@ static void __print_eht_capa(int band,
+@@ -1639,7 +1642,7 @@ static void __print_eht_capa(int band,
  		}
  
  		mcs_set += 3;
@@ -83,7 +83,7 @@ index 73ca500..e744a5b 100644
  			for (i = 0; i < 3; i++)
  				printf("%s\t\tEHT bw=320 MHz, max NSS for MCS %s: Rx=%u, Tx=%u\n",
  				       pre, mcs[i + 1],
-@@ -1646,7 +1649,7 @@ static void __print_eht_capa(int band,
+@@ -1647,7 +1650,7 @@ static void __print_eht_capa(int band,
  		}
  	}
  
@@ -93,5 +93,5 @@ index 73ca500..e744a5b 100644
  		for (i = 0; i < ppet_len; i++)
  			if (ppet[i])
 -- 
-2.45.2
+2.39.5
 
