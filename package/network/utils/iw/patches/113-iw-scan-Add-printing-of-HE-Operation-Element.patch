@@ -1,0 +1,138 @@
+From d71b5e6a20627ddeb95d827a2a8cd15c71eeddf1 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 5 Apr 2025 22:57:21 +0200
+Subject: [PATCH] iw: scan: Add printing of HE Operation Element
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ ieee80211.h |  1 +
+ iw.h        |  1 +
+ scan.c      |  8 +++++++
+ util.c      | 65 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 75 insertions(+)
+
+diff --git a/ieee80211.h b/ieee80211.h
+index de05844..d6dace9 100644
+--- a/ieee80211.h
++++ b/ieee80211.h
+@@ -99,6 +99,7 @@ enum elem_id {
+ enum elem_id_ext {
+ 	EID_EXT_HE_CAPABILITY		= 35,
+ 	EID_EXT_HE_OPERATION		= 36,
++	EID_EXT_EHT_OPERATION		= 106,
+ };
+ 
+ #define SUITE(oui, id)  (((oui) << 8) | (id))
+diff --git a/iw.h b/iw.h
+index dc11d2b..2fe6397 100644
+--- a/iw.h
++++ b/iw.h
+@@ -245,6 +245,7 @@ void print_vht_info(__u32 capa, const __u8 *mcs);
+ void print_he_capability(const uint8_t *ie, int len);
+ void print_he_operation(const uint8_t *ie, int len);
+ void print_he_info(struct nlattr *nl_iftype);
++void print_eht_operation(const uint8_t *ie, int len);
+ void print_eht_info(struct nlattr *nl_iftype, int band);
+ void print_s1g_capability(const uint8_t *caps);
+ 
+diff --git a/scan.c b/scan.c
+index 6cf44d2..36beee4 100644
+--- a/scan.c
++++ b/scan.c
+@@ -2393,9 +2393,17 @@ static void print_he_oper(const uint8_t type, uint8_t len, const uint8_t *data,
+ 	print_he_operation(data, len);
+ }
+ 
++static void print_eht_oper(const uint8_t type, uint8_t len, const uint8_t *data,
++			  const struct ie_context *ctx)
++{
++	printf("\n");
++	print_eht_operation(data, len);
++}
++
+ static const struct ie_print ext_printers[] = {
+ 	[EID_EXT_HE_CAPABILITY] = { "HE capabilities", print_he_capa, 21, 54, BIT(PRINT_SCAN), },
+ 	[EID_EXT_HE_OPERATION] = { "HE Operation", print_he_oper, 6, 15, BIT(PRINT_SCAN), },
++	[EID_EXT_EHT_OPERATION] = { "EHT Operation", print_eht_oper, 6, 15, BIT(PRINT_SCAN), },
+ };
+ 
+ static void print_extension(unsigned char len, unsigned char *ie,
+diff --git a/util.c b/util.c
+index f105e07..08a93f3 100644
+--- a/util.c
++++ b/util.c
+@@ -1857,6 +1857,71 @@ void print_he_operation(const uint8_t *ie, int len)
+ 	}
+ }
+ 
++void print_eht_operation(const uint8_t *ie, int len)
++{
++	uint8_t oper_parameters = ie[0];
++	uint8_t disabled_subchannel_info_present = oper_parameters & 0x02;
++	uint8_t eht_operation_info_present = oper_parameters & 0x01;
++	uint8_t offset = 5;
++
++	printf("\t\tEHT Operation Parameters: (0x%02x)\n",
++	       oper_parameters);
++
++	if (oper_parameters & 0x04)
++		printf("\t\t\tEHT Default PE Duration\n");
++
++	if (oper_parameters & 0x08)
++		printf("\t\t\tGroup Addressed BU Indication Limit\n");
++
++	printf("\t\t\tGroup Addressed BU Indication Exponent: 0x%01x\n",
++		(oper_parameters >> 4 & 3));
++
++	printf("\t\tBasic EHT-MCS And Nss Set: 0x");
++	for (uint8_t i = 0; i < 4; i++)
++		printf("%02x", ie[1 + i]);
++	printf("\n");
++
++	if (eht_operation_info_present) {
++		if (len - offset < 3) {
++			printf("\t\tEHT Operation Info: Invalid\n");
++			return;
++		} else {
++			const uint8_t control = ie[offset + 1];
++
++			printf("\t\tEHT Operation Info: 0x");
++			for (uint8_t i = 0; i < 3; i++)
++				printf("%02x", ie[offset + i]);
++
++			printf("\n");
++			printf("\t\t\tChannel Width: ");
++			switch (control & 0x7) {
++				case 0: printf("20 MHz\n"); break;
++				case 1: printf("40 MHz\n"); break;
++				case 2: printf("80 MHz\n"); break;
++				case 3: printf("160 MHz\n"); break;
++				case 4: printf("320 MHz\n"); break;
++			}
++
++			printf("\t\t\tCenter Frequency Segment 0: %hhu\n", ie[offset + 2]);
++			printf("\t\t\tCenter Frequency Segment 1: %hhu\n", ie[offset + 3]);
++		}
++		offset += 3;
++	}
++
++	if (disabled_subchannel_info_present) {
++		if (len - offset < 2) {
++			printf("\t\tDisabled Subchannel Bitmap: Invalid\n");
++			return;
++		} else {
++			printf("\t\tDisabled Subchannel Bitmap: 0x");
++			for (uint8_t i = 0; i < 2; i++)
++				printf("%02x", ie[offset + i]);
++
++			printf("\n");
++		}
++	}
++}
++
+ void iw_hexdump(const char *prefix, const __u8 *buf, size_t size)
+ {
+ 	size_t i;
+-- 
+2.45.2
+
