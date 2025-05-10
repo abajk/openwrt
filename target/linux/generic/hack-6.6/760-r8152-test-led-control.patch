@@ -1,15 +1,15 @@
-From 313698a40e7e7fd379b546920a7e2a1bf237424c Mon Sep 17 00:00:00 2001
+From 87feae19de6abdf9efd0359637d8a23c226f1aad Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sat, 10 May 2025 11:32:22 +0200
 Subject: [PATCH] r8152: test led control
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- drivers/net/usb/r8152.c | 186 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 186 insertions(+)
+ drivers/net/usb/r8152.c | 193 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
 
 diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 2cab046749a9..4206c1f78325 100644
+index 2cab046749a9..62cda781cfe5 100644
 --- a/drivers/net/usb/r8152.c
 +++ b/drivers/net/usb/r8152.c
 @@ -26,6 +26,8 @@
@@ -21,11 +21,12 @@ index 2cab046749a9..4206c1f78325 100644
  #include <crypto/hash.h>
  #include <linux/usb/r8152.h>
  #include <net/gso.h>
-@@ -356,6 +358,12 @@
+@@ -356,6 +358,13 @@
  #define UWF_EN			0x0010
  #define LAN_WAKE_EN		0x0002
  
 +/* PLA_LEDSEL */
++#define RTL8152_LED_CTRL_OPTION2	BIT(15)
 +#define RTL8152_LED_CTRL_ACT		BIT(3)
 +#define RTL8152_LED_CTRL_LINK_1000	BIT(2)
 +#define RTL8152_LED_CTRL_LINK_100	BIT(1)
@@ -34,7 +35,7 @@ index 2cab046749a9..4206c1f78325 100644
  /* PLA_LED_FEATURE */
  #define LED_MODE_MASK		0x0700
  
-@@ -866,6 +874,14 @@ struct tx_agg {
+@@ -866,6 +875,14 @@ struct tx_agg {
  	u32 skb_len;
  };
  
@@ -49,7 +50,7 @@ index 2cab046749a9..4206c1f78325 100644
  struct r8152 {
  	unsigned long flags;
  	struct usb_device *udev;
-@@ -878,6 +894,7 @@ struct r8152 {
+@@ -878,6 +895,7 @@ struct r8152 {
  	struct list_head rx_done, tx_free;
  	struct sk_buff_head tx_queue, rx_queue;
  	spinlock_t rx_lock, tx_lock;
@@ -57,7 +58,7 @@ index 2cab046749a9..4206c1f78325 100644
  	struct delayed_work schedule, hw_phy_work;
  	struct mii_if_info mii;
  	struct mutex control;	/* use for hw setting */
-@@ -960,6 +977,8 @@ struct r8152 {
+@@ -960,6 +978,8 @@ struct r8152 {
  	u8 autoneg;
  
  	unsigned int reg_access_reset_count;
@@ -66,7 +67,7 @@ index 2cab046749a9..4206c1f78325 100644
  };
  
  /**
-@@ -7047,6 +7066,167 @@ static void rtl_tally_reset(struct r8152 *tp)
+@@ -7047,6 +7067,173 @@ static void rtl_tally_reset(struct r8152 *tp)
  	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RSTTALLY, ocp_data);
  }
  
@@ -91,7 +92,7 @@ index 2cab046749a9..4206c1f78325 100644
 +static void r8152_get_led_name(struct r8152 *tp, int idx,
 +			char *buf, int buf_len)
 +{
-+	snprintf(buf, buf_len, "%s-%d::lan", tp->netdev->name, idx);
++	snprintf(buf, buf_len, "%s-led%d::lan", tp->netdev->name, idx);
 +}
 +
 +#define lcdev_to_r8152_ldev(lcdev) container_of(lcdev, struct r8152_led_classdev, led)
@@ -159,6 +160,11 @@ index 2cab046749a9..4206c1f78325 100644
 +	if (mode < 0)
 +		return mode;
 +
++	if (mode & RTL8152_LED_CTRL_OPTION2) {
++		r8152_led_mod_ctrl(tp, RTL8152_LED_CTRL_OPTION2, 0);
++		netdev_notice(ldev->ndev, "Deactivating unsupported Option2 LED mode\n");
++	}
++
 +	mode = (mode >> shift) & 0x000f;
 +
 +	if (mode & RTL8152_LED_CTRL_ACT)
@@ -196,6 +202,7 @@ index 2cab046749a9..4206c1f78325 100644
 +	led_cdev->name = led_name;
 +	led_cdev->hw_control_trigger = "netdev";
 +	led_cdev->flags |= LED_RETAIN_AT_SHUTDOWN;
++	led_cdev->max_brightness = 1;
 +	led_cdev->hw_control_is_supported = rtl8152_led_hw_control_is_supported;
 +	led_cdev->hw_control_set = rtl8152_led_hw_control_set;
 +	led_cdev->hw_control_get = rtl8152_led_hw_control_get;
@@ -234,7 +241,7 @@ index 2cab046749a9..4206c1f78325 100644
  static void r8152b_init(struct r8152 *tp)
  {
  	u32 ocp_data;
-@@ -9965,6 +10145,9 @@ static int rtl8152_probe_once(struct usb_interface *intf,
+@@ -9965,6 +10152,9 @@ static int rtl8152_probe_once(struct usb_interface *intf,
  		goto out1;
  	}
  
@@ -244,7 +251,7 @@ index 2cab046749a9..4206c1f78325 100644
  	if (tp->saved_wolopts)
  		device_set_wakeup_enable(&udev->dev, true);
  	else
-@@ -10040,6 +10223,9 @@ static void rtl8152_disconnect(struct usb_interface *intf)
+@@ -10040,6 +10230,9 @@ static void rtl8152_disconnect(struct usb_interface *intf)
  	if (tp) {
  		rtl_set_unplug(tp);
  
