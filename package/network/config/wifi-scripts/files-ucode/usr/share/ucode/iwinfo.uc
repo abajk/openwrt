@@ -488,7 +488,7 @@ function scan_extension(len, ext, cell) {
 	case 36:
 		let offset = 6;
 
-		if (!(ord(ext, 2) & 0x2)
+		if (!(ord(ext, 2) & 0x2))
 			break;
 
 		if (ord(ext, 1) & 0x40)
