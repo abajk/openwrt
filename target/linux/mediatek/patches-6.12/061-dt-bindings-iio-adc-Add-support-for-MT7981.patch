@@ -1,0 +1,24 @@
+From 6eead7a00d52aa5f31bd2c3c76281b29d3256182 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 29 Jun 2025 00:14:31 +0200
+Subject: [PATCH 1/2] dt-bindings: iio: adc: Add support for MT7981
+
+The temperature sensor in the MT7981 is same as in the MT7986.
+Add compatible string for mt7981.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ .../devicetree/bindings/iio/adc/mediatek,mt2701-auxadc.yaml      | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/Documentation/devicetree/bindings/iio/adc/mediatek,mt2701-auxadc.yaml
++++ b/Documentation/devicetree/bindings/iio/adc/mediatek,mt2701-auxadc.yaml
+@@ -26,6 +26,7 @@ properties:
+           - mediatek,mt2712-auxadc
+           - mediatek,mt6765-auxadc
+           - mediatek,mt7622-auxadc
++          - mediatek,mt7981-auxadc
+           - mediatek,mt7986-auxadc
+           - mediatek,mt8173-auxadc
+       - items:

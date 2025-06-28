@@ -1,0 +1,33 @@
+From c8c5f04c37a11a9981bc5e912c679b0382aff19b Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 12 Jul 2025 23:09:15 +0200
+Subject: [PATCH 1/2] arm64: dts: mediatek: add crpyto offload support
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -94,6 +94,20 @@
+ 			#pwm-cells = <2>;
+ 		};
+ 
++		crypto@10320000 {
++			compatible = "inside-secure,safexcel-eip97";
++			reg = <0 0x10320000 0 0x40000>;
++			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "ring0", "ring1", "ring2", "ring3";
++			clocks = <&topckgen CLK_TOP_EIP97B>;
++			clock-names = "core";
++			assigned-clocks = <&topckgen CLK_TOP_EIP97B_SEL>;
++			assigned-clock-parents = <&topckgen CLK_TOP_CB_NET1_D5>;
++		};
++
+ 		serial@11002000 {
+ 			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
+ 			reg = <0 0x11002000 0 0x100>;
