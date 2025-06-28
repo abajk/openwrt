@@ -88,15 +88,7 @@ working:
  	soc {
  		compatible = "simple-bus";
  		ranges;
-@@ -76,13 +134,13 @@
- 			#reset-cells = <1>;
- 		};
- 
--		clock-controller@1001e000 {
--			compatible = "mediatek,mt7981-apmixedsys";
-+		apmixedsys: clock-controller@1001e000 {
-+			compatible = "mediatek,mt7981-apmixedsys", "syscon";
- 			reg = <0 0x1001e000 0 0x1000>;
+@@ -82,7 +140,7 @@
  			#clock-cells = <1>;
  		};
  
@@ -105,30 +97,16 @@ working:
  			compatible = "mediatek,mt7981-pwm";
  			reg = <0 0x10048000 0 0x1000>;
  			clocks = <&infracfg CLK_INFRA_PWM_STA>,
-@@ -94,7 +152,21 @@
- 			#pwm-cells = <2>;
+@@ -108,7 +166,7 @@
+ 			assigned-clock-parents = <&topckgen CLK_TOP_CB_NET1_D5>;
  		};
  
 -		serial@11002000 {
-+		crypto: crypto@10320000 {
-+			compatible = "inside-secure,safexcel-eip97";
-+			reg = <0 0x10320000 0 0x40000>;
-+			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
-+				     <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
-+				     <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>,
-+				     <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupt-names = "ring0", "ring1", "ring2", "ring3";
-+			clocks = <&topckgen CLK_TOP_EIP97B>;
-+			clock-names = "top_eip97_ck";
-+			assigned-clocks = <&topckgen CLK_TOP_EIP97B_SEL>;
-+			assigned-clock-parents = <&topckgen CLK_TOP_CB_NET1_D5>;
-+		};
-+
 +		uart0: serial@11002000 {
  			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
  			reg = <0 0x11002000 0 0x100>;
  			interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
-@@ -105,7 +177,7 @@
+@@ -119,7 +177,7 @@
  			status = "disabled";
  		};
  
@@ -137,7 +115,7 @@ working:
  			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
  			reg = <0 0x11003000 0 0x100>;
  			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
-@@ -116,7 +188,7 @@
+@@ -130,7 +188,7 @@
  			status = "disabled";
  		};
  
@@ -146,7 +124,7 @@ working:
  			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
  			reg = <0 0x11004000 0 0x100>;
  			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
-@@ -127,11 +199,12 @@
+@@ -141,11 +199,12 @@
  			status = "disabled";
  		};
  
@@ -160,41 +138,16 @@ working:
  			clocks = <&infracfg CLK_INFRA_I2C0_CK>,
  				 <&infracfg CLK_INFRA_AP_DMA_CK>,
  				 <&infracfg CLK_INFRA_I2C_MCK_CK>,
-@@ -142,7 +215,32 @@
+@@ -156,7 +215,7 @@
  			status = "disabled";
  		};
  
 -		spi@11009000 {
-+		thermal: thermal@1100c800 {
-+			#thermal-sensor-cells = <1>;
-+			compatible = "mediatek,mt7981-thermal", "mediatek,mt7986-thermal";
-+			reg = <0 0x1100c800 0 0x800>;
-+			interrupts = <GIC_SPI 138 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&infracfg CLK_INFRA_THERM_CK>,
-+				 <&infracfg CLK_INFRA_ADC_26M_CK>;
-+			clock-names = "therm", "auxadc";
-+			mediatek,auxadc = <&auxadc>;
-+			mediatek,apmixedsys = <&apmixedsys>;
-+			nvmem-cells = <&thermal_calibration>;
-+			nvmem-cell-names = "calibration-data";
-+		};
-+
-+		auxadc: adc@1100d000 {
-+			compatible = "mediatek,mt7981-auxadc",
-+				     "mediatek,mt7986-auxadc",
-+				     "mediatek,mt7622-auxadc";
-+			reg = <0 0x1100d000 0 0x1000>;
-+			clocks = <&infracfg CLK_INFRA_ADC_26M_CK>,
-+				 <&infracfg CLK_INFRA_ADC_FRC_CK>;
-+			clock-names = "main", "32k";
-+			#io-channel-cells = <1>;
-+		};
-+
 +		spi2: spi@11009000 {
  			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
  			reg = <0 0x11009000 0 0x1000>;
  			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>;
-@@ -156,7 +254,7 @@
+@@ -170,7 +229,7 @@
  			status = "disabled";
  		};
  
@@ -203,7 +156,7 @@ working:
  			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
  			reg = <0 0x1100a000 0 0x1000>;
  			interrupts = <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>;
-@@ -170,7 +268,7 @@
+@@ -184,7 +243,7 @@
  			status = "disabled";
  		};
  
@@ -212,7 +165,7 @@ working:
  			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
  			reg = <0 0x1100b000 0 0x1000>;
  			interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>;
-@@ -184,6 +282,41 @@
+@@ -224,6 +283,41 @@
  			status = "disabled";
  		};
  
@@ -254,7 +207,7 @@ working:
  		pio: pinctrl@11d00000 {
  			compatible = "mediatek,mt7981-pinctrl";
  			reg = <0 0x11d00000 0 0x1000>,
-@@ -204,6 +337,49 @@
+@@ -244,6 +338,49 @@
  			gpio-controller;
  			#gpio-cells = <2>;
  			#interrupt-cells = <2>;
@@ -304,14 +257,10 @@ working:
  		};
  
  		efuse@11f20000 {
-@@ -211,17 +387,316 @@
- 			reg = <0 0x11f20000 0 0x1000>;
- 			#address-cells = <1>;
- 			#size-cells = <1>;
-+
-+			thermal_calibration: thermal-calib@274 {
-+				reg = <0x274 0xc>;
-+			};
+@@ -255,17 +392,312 @@
+ 			thermal_calibration: thermal-calib@274 {
+ 				reg = <0x274 0xc>;
+ 			};
 +
 +			phy_calibration: phy-calib@8dc {
 +				reg = <0x8dc 0x10>;
@@ -623,7 +572,7 @@ working:
  			reg = <0 0x18000000 0 0x1000000>,
  			      <0 0x10003000 0 0x1000>,
  			      <0 0x11d10000 0 0x1000>;
-@@ -234,6 +709,67 @@
+@@ -278,6 +710,67 @@
  			clock-names = "mcu", "ap2conn";
  			resets = <&watchdog MT7986_TOPRGU_CONSYS_SW_RST>;
  			reset-names = "consys";
@@ -691,7 +640,7 @@ working:
  		};
  	};
  
-@@ -245,4 +781,8 @@
+@@ -289,4 +782,8 @@
  			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
  			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
  	};
