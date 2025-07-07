@@ -1,0 +1,25 @@
+From 4aac21506161c6cc6e9324d2f6336379b05ea5d1 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 5 Jul 2025 23:44:48 +0200
+Subject: [PATCH] test
+
+---
+ drivers/net/phy/aquantia/aquantia_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/aquantia/aquantia_main.c b/drivers/net/phy/aquantia/aquantia_main.c
+index 77a48635d7bf..0e5ecd5c5372 100644
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -28,7 +28,7 @@
+ #define PHY_ID_AQR112	0x03a1b662
+ #define PHY_ID_AQR412	0x03a1b712
+ #define PHY_ID_AQR113	0x31c31c40
+-#define PHY_ID_AQR113C	0x31c31c12
++#define PHY_ID_AQR113C	0x31c31c13
+ #define PHY_ID_AQR114C	0x31c31c22
+ #define PHY_ID_AQR115C	0x31c31c33
+ #define PHY_ID_AQR813	0x31c31cb2
+-- 
+2.39.5
+

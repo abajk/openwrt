@@ -1,15 +1,15 @@
-From 870333325e08033b488080ae7893343f8fe5272c Mon Sep 17 00:00:00 2001
+From bd4bf860cc31c251f0e964aa622310343af2fde2 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sat, 5 Jul 2025 15:14:50 +0200
 Subject: [PATCH] net: phy: realtek: add RTL8261N PHY
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- drivers/net/phy/realtek/realtek_main.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/net/phy/realtek/realtek_main.c | 36 ++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
 diff --git a/drivers/net/phy/realtek/realtek_main.c b/drivers/net/phy/realtek/realtek_main.c
-index c3dcb6257430..55df9a910c0f 100644
+index c3dcb6257430..b8569ecf10d1 100644
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
 @@ -159,6 +159,7 @@
@@ -20,10 +20,23 @@ index c3dcb6257430..55df9a910c0f 100644
  
  /* RTL8211E and RTL8211F support up to three LEDs */
  #define RTL8211x_LED_COUNT			3
-@@ -1395,6 +1396,11 @@ static int rtl8251b_c45_match_phy_device(struct phy_device *phydev,
+@@ -1380,6 +1381,7 @@ static int rtl_internal_nbaset_match_phy_device(struct phy_device *phydev,
+ 	case RTL_8221B:
+ 	case RTL_8251B:
+ 	case RTL_8261C:
++	case RTL_8261N:
+ 	case 0x001cc841:
+ 		break;
+ 	default:
+@@ -1395,6 +1397,16 @@ static int rtl8251b_c45_match_phy_device(struct phy_device *phydev,
  	return rtlgen_is_c45_match(phydev, RTL_8251B, true);
  }
  
++static int rtl8261n_c22_match_phy_device(struct phy_device *phydev)
++{
++	return rtlgen_is_c45_match(phydev, RTL_8261N, false);
++}
++
 +static int rtl8261n_c45_match_phy_device(struct phy_device *phydev)
 +{
 +	return rtlgen_is_c45_match(phydev, RTL_8261N, true);
@@ -32,10 +45,21 @@ index c3dcb6257430..55df9a910c0f 100644
  static int rtlgen_resume(struct phy_device *phydev)
  {
  	int ret = genphy_resume(phydev);
-@@ -1747,6 +1754,17 @@ static struct phy_driver realtek_drvs[] = {
+@@ -1747,6 +1761,28 @@ static struct phy_driver realtek_drvs[] = {
  		.resume         = rtlgen_resume,
  		.read_page      = rtl821x_read_page,
  		.write_page     = rtl821x_write_page,
++	}, {
++		.match_phy_device = rtl8261n_c22_match_phy_device,
++		.name           = "RTL8261N 10Gbps PHY",
++		.probe		= rtl822x_probe,
++		.get_features   = rtl822x_get_features,
++		.config_aneg    = rtl822x_config_aneg,
++		.read_status    = rtl822x_read_status,
++		.suspend        = genphy_suspend,
++		.resume         = rtlgen_resume,
++		.read_page      = rtl821x_read_page,
++		.write_page     = rtl821x_write_page,
 +	}, {
 +		.match_phy_device = rtl8261n_c45_match_phy_device,
 +		.name           = "RTL8261N 10Gbps PHY",

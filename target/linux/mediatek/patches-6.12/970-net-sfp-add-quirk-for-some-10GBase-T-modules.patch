@@ -1,27 +1,113 @@
-From 1eccf9dceaf3455ba92d6f4dceecb37308a71183 Mon Sep 17 00:00:00 2001
+From 77763922e3edf91bc6568a84b4b4caf6f0c43739 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sat, 5 Jul 2025 12:20:06 +0200
 Subject: [PATCH] net: sfp: add quirk for some 10GBase-T modules
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- drivers/net/phy/sfp.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/phy/sfp.c | 41 +++++++++++++++++++++++++++++++----------
+ 1 file changed, 31 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
-index 347c1e0e94d9..57eb63fb4fc2 100644
+index 347c1e0e94d9..707f65d65694 100644
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -521,6 +521,9 @@ static const struct sfp_quirk sfp_quirks[] = {
+@@ -422,6 +422,15 @@ static void sfp_fixup_rollball_cc(struct sfp *sfp)
+ 	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
+ }
+ 
++static void sfp_fixup_cc(struct sfp *sfp)
++{
++
++	/* Some RollBall SFPs may have wrong (zero) extended compliance code
++	 * burned in EEPROM. For PHY probing we need the correct one.
++	 */
++	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
++}
++
+ static void sfp_quirk_2500basex(const struct sfp_eeprom_id *id,
+ 				unsigned long *modes,
+ 				unsigned long *interfaces)
+@@ -521,6 +530,9 @@ static const struct sfp_quirk sfp_quirks[] = {
  	SFP_QUIRK_M("OEM", "SFP-2.5G-BX10-U", sfp_quirk_2500basex),
  	SFP_QUIRK_F("OEM", "RTSFP-10", sfp_fixup_rollball_cc),
  	SFP_QUIRK_F("OEM", "RTSFP-10G", sfp_fixup_rollball_cc),
-+	SFP_QUIRK_F("FLYPRO", "SFP-10GT-CS-30M", sfp_fixup_rollball),
-+	SFP_QUIRK_F("OEM", "SFP+-T-R30", sfp_fixup_rollball),
-+	SFP_QUIRK_F("OEM", "SL-10GE-T-D", sfp_fixup_rollball),
++	SFP_QUIRK_F("FLYPRO", "SFP-10GT-CS-30M", sfp_fixup_cc),
++	SFP_QUIRK_F("OEM", "SFP+-T-R30", sfp_fixup_cc),
++	SFP_QUIRK_F("OEM", "SL-10GE-T-D", sfp_fixup_cc),
  	SFP_QUIRK_F("Turris", "RTSFP-2.5G", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
+@@ -765,7 +777,8 @@ static int sfp_i2c_mdiobus_create(struct sfp *sfp)
+ {
+ 	struct mii_bus *i2c_mii;
+ 	int ret;
+-
++	
++	printk(KERN_ERR "%s: proto=%u\n", __func__, sfp->mdio_protocol);
+ 	i2c_mii = mdio_i2c_alloc(sfp->dev, sfp->i2c, sfp->mdio_protocol);
+ 	if (IS_ERR(i2c_mii))
+ 		return PTR_ERR(i2c_mii);
+@@ -1984,14 +1997,17 @@ static int sfp_sm_probe_for_phy(struct sfp *sfp)
+ 		break;
+ 
+ 	case MDIO_I2C_MARVELL_C22:
++		printk(KERN_ERR "%s: c22\n", __func__);
+ 		err = sfp_sm_probe_phy(sfp, SFP_PHY_ADDR, false);
+ 		break;
+ 
+ 	case MDIO_I2C_C45:
++		printk(KERN_ERR "%s: c45\n", __func__);
+ 		err = sfp_sm_probe_phy(sfp, SFP_PHY_ADDR, true);
+ 		break;
+ 
+ 	case MDIO_I2C_ROLLBALL:
++		printk(KERN_ERR "%s: rollball\n", __func__);
+ 		err = sfp_sm_probe_phy(sfp, SFP_PHY_ADDR_ROLLBALL, true);
+ 		break;
+ 	}
+@@ -2414,17 +2430,25 @@ static int sfp_sm_mod_probe(struct sfp *sfp, bool report)
+ 
+ 	sfp->state_ignore_mask = 0;
+ 
++	sfp->quirk = sfp_lookup_quirk(&id);
++
++	if (sfp->quirk && sfp->quirk->fixup)
++		sfp->quirk->fixup(sfp);
++
++	printk(KERN_ERR "%s: 1\n", __func__);
+ 	if (sfp->id.base.extended_cc == SFF8024_ECC_10GBASE_T_SFI ||
+ 	    sfp->id.base.extended_cc == SFF8024_ECC_10GBASE_T_SR ||
+ 	    sfp->id.base.extended_cc == SFF8024_ECC_5GBASE_T ||
+-	    sfp->id.base.extended_cc == SFF8024_ECC_2_5GBASE_T)
+-		sfp->mdio_protocol = MDIO_I2C_C45;
+-	else if (sfp->id.base.e1000_base_t)
++	    sfp->id.base.extended_cc == SFF8024_ECC_2_5GBASE_T) {
++		printk(KERN_ERR "%s: 2\n", __func__);
+ 		sfp->mdio_protocol = MDIO_I2C_MARVELL_C22;
+-	else
++	} else if (sfp->id.base.e1000_base_t) {
++		printk(KERN_ERR "%s: 3\n", __func__);
++		sfp->mdio_protocol = MDIO_I2C_MARVELL_C22;
++	} else {
++		printk(KERN_ERR "%s: 4\n", __func__);
+ 		sfp->mdio_protocol = MDIO_I2C_NONE;
+-
+-	sfp->quirk = sfp_lookup_quirk(&id);
++	}
+ 
+ 	mutex_lock(&sfp->st_mutex);
+ 	/* Initialise state bits to use from hardware */
+@@ -2433,9 +2457,6 @@ static int sfp_sm_mod_probe(struct sfp *sfp, bool report)
+ 	/* We want to drive the rate select pins that the module is using */
+ 	sfp->state_hw_drive |= sfp->rs_state_mask;
+ 
+-	if (sfp->quirk && sfp->quirk->fixup)
+-		sfp->quirk->fixup(sfp);
+-
+ 	sfp->state_hw_mask &= ~sfp->state_ignore_mask;
+ 	mutex_unlock(&sfp->st_mutex);
+ 
 -- 
 2.39.5
 
