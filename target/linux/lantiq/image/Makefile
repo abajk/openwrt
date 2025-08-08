@@ -124,6 +124,7 @@ define Device/NAND_preloader
 	pad-to 64k | pad-to 4k
   KERNEL := kernel-bin | append-dtb | lzma | uImage lzma -M 0x4f4b4c49 | \
 	prepend-loader-okli $(1)
+  KERNEL_INITRAMFS := kernel-bin | append-dtb | lzma
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
 endef
 
