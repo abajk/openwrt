@@ -4,10 +4,11 @@ define Device/dsa-migration
 endef
 
 define Device/dlink_dwr-966
-  $(Device/NAND)
+  $(Device/NAND_preloader)
   DEVICE_VENDOR := D-Link
   DEVICE_MODEL := DWR-966
   SOC := xrx330
+  LOADER_FLASH_OFFS := 0x31000
   DEVICE_PACKAGES := kmod-usb-dwc2 \
 	xrx300-phy11g-firmware \
 	-ltq-vdsl-vr9-vectoring-fw-installer \

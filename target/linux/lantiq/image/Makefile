@@ -117,6 +117,16 @@ define Device/NAND
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
 endef
 
+define Device/NAND_preloader
+  $(Device/NAND/$(SUBTARGET))
+  COMPILE := loader-$(1).bin
+  COMPILE/loader-$(1).bin := loader-okli-compile | lzma \
+	pad-to 64k | pad-to 4k
+  KERNEL := kernel-bin | append-dtb | lzma | uImage lzma -M 0x4f4b4c49 | \
+	prepend-loader-okli $(1)
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+endef
+
 define Device/lantiqBrnImage
   KERNEL := kernel-bin | append-dtb | mkbrncmdline | lzma-no-dict
   IMAGES := factory.bin
