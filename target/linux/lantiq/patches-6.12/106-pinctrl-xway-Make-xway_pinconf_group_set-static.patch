@@ -1,0 +1,32 @@
+From f1412cc3c63e067658fc799f999d83e03305976e Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Thu, 26 May 2022 16:40:56 +0200
+Subject: [PATCH 106/121] pinctrl: xway: Make xway_pinconf_group_set static
+
+Make xway_pinconf_group_set static to fix the only remaining compiler
+warning in this driver.
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+[rebased and resolved conflicts]
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/pinctrl/pinctrl-xway.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-xway.c b/drivers/pinctrl/pinctrl-xway.c
+index b3c8c1d34c84..88817a99879b 100644
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -1230,8 +1230,7 @@ static int xway_pinconf_set(struct pinctrl_dev *pctldev,
+ }
+ 
+ static int xway_pinconf_group_set(struct pinctrl_dev *pctldev,
+-				  unsigned int selector,
+-				  unsigned long *configs,
++				  unsigned int selector, unsigned long *configs,
+ 				  unsigned int num_configs)
+ {
+ 	struct ltq_pinmux_info *info = pinctrl_dev_get_drvdata(pctldev);
+-- 
+2.47.2
+

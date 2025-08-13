@@ -1,0 +1,602 @@
+From 0e4d5c23dcce94caa4ce90fffd4a53428f203d11 Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Tue, 5 Jan 2021 19:01:15 +0100
+Subject: [PATCH 111/121] soc: lantiq: Add a driver for the EBU IP
+
+Both SoC types have the EBU registers and exposing the ltq_ebu_membase
+in (the SoC-independent) arch/mips/include/asm/mach-lantiq/lantiq.h.
+The only difference is the initialization logic: XWAY clears the WRDIS
+(write disable) bit of the BUSCON0 register, while Falcon leaves it as
+is.
+
+Move the existing EBU logic from the Falcon and XWAY SoC types into a
+generic driver.
+This will make it easier to add the PCI irq controller which is provided
+by EBU on at least the XWAY SoCs.
+
+No functional changes intended.
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+[rebased and resolved conflicts]
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ .../include/asm/mach-lantiq/xway/lantiq_soc.h |   5 -
+ arch/mips/lantiq/falcon/sysctrl.c             |  16 +-
+ arch/mips/lantiq/irq.c                        |  11 -
+ arch/mips/lantiq/xway/sysctrl.c               |  21 +-
+ arch/mips/pci/pci-lantiq.c                    |   4 -
+ drivers/soc/lantiq/Kconfig                    |   9 +
+ drivers/soc/lantiq/Makefile                   |   1 +
+ drivers/soc/lantiq/ebu.c                      | 351 ++++++++++++++++++
+ 8 files changed, 370 insertions(+), 48 deletions(-)
+ create mode 100644 drivers/soc/lantiq/ebu.c
+
+diff --git a/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h b/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
+index dd9f621d0204..e4efdda949ac 100644
+--- a/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
++++ b/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
+@@ -79,13 +79,8 @@ extern __iomem void *ltq_cgu_membase;
+ #define LTQ_EARLY_ASC		KSEG1ADDR(LTQ_ASC1_BASE_ADDR)
+ 
+ /* EBU - external bus unit */
+-#define LTQ_EBU_BUSCON0		0x0060
+-#define LTQ_EBU_PCC_CON		0x0090
+-#define LTQ_EBU_PCC_IEN		0x00A4
+-#define LTQ_EBU_PCC_ISTAT	0x00A0
+ #define LTQ_EBU_BUSCON1		0x0064
+ #define LTQ_EBU_ADDRSEL1	0x0024
+-#define EBU_WRDIS		0x80000000
+ 
+ /* WDT */
+ #define LTQ_RST_CAUSE_WDTRST	0x20
+diff --git a/arch/mips/lantiq/falcon/sysctrl.c b/arch/mips/lantiq/falcon/sysctrl.c
+index 577e6e6309a6..e34ef7ae5f20 100644
+--- a/arch/mips/lantiq/falcon/sysctrl.c
++++ b/arch/mips/lantiq/falcon/sysctrl.c
+@@ -71,7 +71,7 @@
+ #define status_r32(x)		ltq_r32(status_membase + (x))
+ 
+ static void __iomem *sysctl_membase[3], *status_membase;
+-void __iomem *ltq_sys1_membase, *ltq_ebu_membase;
++void __iomem *ltq_sys1_membase;
+ 
+ static inline void sysctl_wait(struct clk *clk,
+ 		unsigned int test, unsigned int reg)
+@@ -182,23 +182,20 @@ void __init ltq_soc_init(void)
+ {
+ 	struct device_node *np_status =
+ 		of_find_compatible_node(NULL, NULL, "lantiq,status-falcon");
+-	struct device_node *np_ebu =
+-		of_find_compatible_node(NULL, NULL, "lantiq,ebu-falcon");
+ 	struct device_node *np_sys1 =
+ 		of_find_compatible_node(NULL, NULL, "lantiq,sys1-falcon");
+ 	struct device_node *np_syseth =
+ 		of_find_compatible_node(NULL, NULL, "lantiq,syseth-falcon");
+ 	struct device_node *np_sysgpe =
+ 		of_find_compatible_node(NULL, NULL, "lantiq,sysgpe-falcon");
+-	struct resource res_status, res_ebu, res_sys[3];
++	struct resource res_status, res_sys[3];
+ 	int i;
+ 
+ 	/* check if all the core register ranges are available */
+-	if (!np_status || !np_ebu || !np_sys1 || !np_syseth || !np_sysgpe)
++	if (!np_status || !np_sys1 || !np_syseth || !np_sysgpe)
+ 		panic("Failed to load core nodes from devicetree");
+ 
+ 	if (of_address_to_resource(np_status, 0, &res_status) ||
+-			of_address_to_resource(np_ebu, 0, &res_ebu) ||
+ 			of_address_to_resource(np_sys1, 0, &res_sys[0]) ||
+ 			of_address_to_resource(np_syseth, 0, &res_sys[1]) ||
+ 			of_address_to_resource(np_sysgpe, 0, &res_sys[2]))
+@@ -212,8 +209,6 @@ void __init ltq_soc_init(void)
+ 
+ 	if ((!request_mem_region(res_status.start, resource_size(&res_status),
+ 				 res_status.name)) ||
+-	    (!request_mem_region(res_ebu.start, resource_size(&res_ebu),
+-				 res_ebu.name)) ||
+ 	    (!request_mem_region(res_sys[0].start, resource_size(&res_sys[0]),
+ 				 res_sys[0].name)) ||
+ 	    (!request_mem_region(res_sys[1].start, resource_size(&res_sys[1]),
+@@ -224,10 +219,7 @@ void __init ltq_soc_init(void)
+ 
+ 	status_membase = ioremap(res_status.start,
+ 					resource_size(&res_status));
+-	ltq_ebu_membase = ioremap(res_ebu.start,
+-					resource_size(&res_ebu));
+-
+-	if (!status_membase || !ltq_ebu_membase)
++	if (!status_membase)
+ 		panic("Failed to remap core resources");
+ 
+ 	for (i = 0; i < 3; i++) {
+diff --git a/arch/mips/lantiq/irq.c b/arch/mips/lantiq/irq.c
+index 961c55933a6d..20d6c10063c1 100644
+--- a/arch/mips/lantiq/irq.c
++++ b/arch/mips/lantiq/irq.c
+@@ -42,12 +42,6 @@
+ /* the performance counter */
+ #define LTQ_PERF_IRQ		(INT_NUM_IM4_IRL0 + 31)
+ 
+-/*
+- * irqs generated by devices attached to the EBU need to be acked in
+- * a special manner
+- */
+-#define LTQ_ICU_EBU_IRQ		22
+-
+ #define ltq_icu_w32(vpe, m, x, y)	\
+ 	ltq_w32((x), ltq_icu_membase[vpe] + m*LTQ_ICU_IM_SIZE + (y))
+ 
+@@ -302,11 +296,6 @@ static void ltq_hw_irq_handler(struct irq_desc *desc)
+ 	irq = __fls(irq);
+ 	hwirq = irq + MIPS_CPU_IRQ_CASCADE + (INT_NUM_IM_OFFSET * module);
+ 	generic_handle_domain_irq(ltq_domain, hwirq);
+-
+-	/* if this is a EBU irq, we need to ack it or get a deadlock */
+-	if (irq == LTQ_ICU_EBU_IRQ && !module && LTQ_EBU_PCC_ISTAT != 0)
+-		ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_PCC_ISTAT) | 0x10,
+-			LTQ_EBU_PCC_ISTAT);
+ }
+ 
+ static int icu_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
+diff --git a/arch/mips/lantiq/xway/sysctrl.c b/arch/mips/lantiq/xway/sysctrl.c
+index 5a75283d17f1..86d18080963d 100644
+--- a/arch/mips/lantiq/xway/sysctrl.c
++++ b/arch/mips/lantiq/xway/sysctrl.c
+@@ -148,7 +148,6 @@ static u32 pmu_clk_cr_b[] = {
+ 
+ static void __iomem *pmu_membase;
+ void __iomem *ltq_cgu_membase;
+-void __iomem *ltq_ebu_membase;
+ 
+ static u32 ifccr = CGU_IFCCR;
+ static u32 pcicr = CGU_PCICR;
+@@ -442,21 +441,18 @@ static void clkdev_add_clkout(void)
+ /* bring up all register ranges that we need for basic system control */
+ void __init ltq_soc_init(void)
+ {
+-	struct resource res_pmu, res_cgu, res_ebu;
++	struct resource res_pmu, res_cgu;
+ 	struct device_node *np_pmu =
+ 			of_find_compatible_node(NULL, NULL, "lantiq,pmu-xway");
+ 	struct device_node *np_cgu =
+ 			of_find_compatible_node(NULL, NULL, "lantiq,cgu-xway");
+-	struct device_node *np_ebu =
+-			of_find_compatible_node(NULL, NULL, "lantiq,ebu-xway");
+ 
+ 	/* check if all the core register ranges are available */
+-	if (!np_pmu || !np_cgu || !np_ebu)
++	if (!np_pmu || !np_cgu)
+ 		panic("Failed to load core nodes from devicetree");
+ 
+ 	if (of_address_to_resource(np_pmu, 0, &res_pmu) ||
+-			of_address_to_resource(np_cgu, 0, &res_cgu) ||
+-			of_address_to_resource(np_ebu, 0, &res_ebu))
++			of_address_to_resource(np_cgu, 0, &res_cgu))
+ 		panic("Failed to get core resources");
+ 
+ 	of_node_put(np_pmu);
+@@ -466,22 +462,15 @@ void __init ltq_soc_init(void)
+ 	if (!request_mem_region(res_pmu.start, resource_size(&res_pmu),
+ 				res_pmu.name) ||
+ 		!request_mem_region(res_cgu.start, resource_size(&res_cgu),
+-				res_cgu.name) ||
+-		!request_mem_region(res_ebu.start, resource_size(&res_ebu),
+-				res_ebu.name))
++				res_cgu.name))
+ 		pr_err("Failed to request core resources");
+ 
+ 	pmu_membase = ioremap(res_pmu.start, resource_size(&res_pmu));
+ 	ltq_cgu_membase = ioremap(res_cgu.start,
+ 						resource_size(&res_cgu));
+-	ltq_ebu_membase = ioremap(res_ebu.start,
+-						resource_size(&res_ebu));
+-	if (!pmu_membase || !ltq_cgu_membase || !ltq_ebu_membase)
++	if (!pmu_membase || !ltq_cgu_membase)
+ 		panic("Failed to remap core resources");
+ 
+-	/* make sure to unprotect the memory region where flash is located */
+-	ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_BUSCON0) & ~EBU_WRDIS, LTQ_EBU_BUSCON0);
+-
+ 	/* add our generic xway clocks */
+ 	clkdev_add_pmu("10000000.fpi", NULL, 0, 0, PMU_FPI);
+ 	clkdev_add_pmu("1e100a00.gptu", NULL, 1, 0, PMU_GPT);
+diff --git a/arch/mips/pci/pci-lantiq.c b/arch/mips/pci/pci-lantiq.c
+index 0e85839b8225..43db0082913b 100644
+--- a/arch/mips/pci/pci-lantiq.c
++++ b/arch/mips/pci/pci-lantiq.c
+@@ -188,10 +188,6 @@ static int ltq_pci_startup(struct platform_device *pdev)
+ 	ltq_pci_w32(ltq_pci_r32(PCI_CR_PCI_MOD) | (1 << 24), PCI_CR_PCI_MOD);
+ 	wmb();
+ 
+-	/* setup irq line */
+-	ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_PCC_CON) | 0xc, LTQ_EBU_PCC_CON);
+-	ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_PCC_IEN) | 0x10, LTQ_EBU_PCC_IEN);
+-
+ 	/* toggle reset pin */
+ 	if (reset_gpio) {
+ 		gpiod_set_value_cansleep(reset_gpio, 1);
+diff --git a/drivers/soc/lantiq/Kconfig b/drivers/soc/lantiq/Kconfig
+index c4cd30e553cd..8c74de0c78ed 100644
+--- a/drivers/soc/lantiq/Kconfig
++++ b/drivers/soc/lantiq/Kconfig
+@@ -4,3 +4,12 @@ config LANTIQ_FPI_BUS
+ 	default SOC_XWAY
+ 	help
+ 	  Enable support for the FPI bus on Lantiq XWAY SoCs
++
++config LANTIQ_EBU
++	bool "Lantiq EBU"
++	depends on LANTIQ || COMPILE_TEST
++	default LANTIQ
++	select IRQ_DOMAIN
++	select REGMAP_MMIO
++	help
++	  Enable support for the External Bus Unit (EBU) on Lantiq SoCs
+diff --git a/drivers/soc/lantiq/Makefile b/drivers/soc/lantiq/Makefile
+index 9f80533f4c0a..c1c3047f6f1e 100644
+--- a/drivers/soc/lantiq/Makefile
++++ b/drivers/soc/lantiq/Makefile
+@@ -1,2 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ obj-$(CONFIG_LANTIQ_FPI_BUS)		+= fpi-bus.o
++obj-$(CONFIG_LANTIQ_EBU)		+= ebu.o
+diff --git a/drivers/soc/lantiq/ebu.c b/drivers/soc/lantiq/ebu.c
+new file mode 100644
+index 000000000000..9b7a405f9374
+--- /dev/null
++++ b/drivers/soc/lantiq/ebu.c
+@@ -0,0 +1,351 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ *  Copyright (C) 2019-2022 Martin Blumenstingl <martin.blumenstingl@googlemail.com>
++ *  Copyright (C) 2011-2012 John Crispin <john@phrozen.org>
++ */
++
++#include <linux/bits.h>
++#include <linux/clk.h>
++#include <linux/ioport.h>
++#include <linux/irqchip.h>
++#include <linux/irqchip/chained_irq.h>
++#include <linux/irqdomain.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/regmap.h>
++
++#define LTQ_EBU_BUSCON0				0x60
++#define LTQ_EBU_BUSCON_WRDIS			BIT(31)
++#define LTQ_EBU_PCC_CON				0x90
++#define LTQ_EBU_PCC_CON_PCCARD_ON		BIT(0)
++#define LTQ_EBU_PCC_CON_IREQ_DIS		0x0
++#define LTQ_EBU_PCC_CON_IREQ_RISING_EDGE	BIT(1)
++#define LTQ_EBU_PCC_CON_IREQ_FALLING_EDGE	BIT(2)
++#define LTQ_EBU_PCC_CON_IREQ_LEVEL_DETECT	BIT(3)
++#define LTQ_EBU_PCC_CON_IREQ_MASK		GENMASK(3, 1)
++#define LTQ_EBU_ISTAT				0xa0
++#define LTQ_EBU_ISTAT_PCI			BIT(4)
++#define LTQ_EBU_ISTAT_ECC			BIT(5)
++#define LTQ_EBU_IEN				0xa4
++#define LTQ_EBU_IEN_PCI				BIT(4)
++#define LTQ_EBU_IEN_ECC				BIT(5)
++
++void __iomem *ltq_ebu_membase;
++
++struct ltq_ebu_irq_priv {
++	struct regmap *regmap;
++	struct irq_domain *domain;
++};
++
++struct ltq_ebu_data {
++	bool initialize_buscon0_wrdis;
++};
++
++static void ltq_ebu_ack_irq(struct irq_data *d)
++{
++	struct ltq_ebu_irq_priv *priv = irq_data_get_irq_chip_data(d);
++
++	regmap_write(priv->regmap, LTQ_EBU_ISTAT,
++		     d->hwirq ? LTQ_EBU_ISTAT_ECC : LTQ_EBU_ISTAT_PCI);
++}
++
++static void ltq_ebu_mask_irq(struct irq_data *d)
++{
++	struct ltq_ebu_irq_priv *priv = irq_data_get_irq_chip_data(d);
++
++	regmap_clear_bits(priv->regmap, LTQ_EBU_IEN,
++			  d->hwirq ? LTQ_EBU_IEN_ECC : LTQ_EBU_IEN_PCI);
++}
++
++static void ltq_ebu_unmask_irq(struct irq_data *d)
++{
++	struct ltq_ebu_irq_priv *priv = irq_data_get_irq_chip_data(d);
++
++	regmap_set_bits(priv->regmap, LTQ_EBU_IEN,
++			d->hwirq ? LTQ_EBU_IEN_ECC : LTQ_EBU_IEN_PCI);
++}
++
++static int ltq_ebu_set_irq_type(struct irq_data *d, unsigned int flow_type)
++{
++	struct ltq_ebu_irq_priv *priv = irq_data_get_irq_chip_data(d);
++	u32 val;
++
++	/* Only the type of the PCI interrupt (hwirq 0) can be configured */
++	if (d->hwirq != 0) {
++		if (flow_type != IRQ_TYPE_NONE)
++			 return -EINVAL;
++
++		return 0;
++	}
++
++	switch (flow_type & IRQ_TYPE_SENSE_MASK) {
++	case IRQ_TYPE_NONE:
++		val = LTQ_EBU_PCC_CON_IREQ_DIS;
++		break;
++
++	case IRQ_TYPE_EDGE_RISING:
++		val = LTQ_EBU_PCC_CON_IREQ_RISING_EDGE;
++		break;
++
++	case IRQ_TYPE_EDGE_FALLING:
++		val = LTQ_EBU_PCC_CON_IREQ_FALLING_EDGE;
++		break;
++
++	case IRQ_TYPE_EDGE_BOTH:
++		val = LTQ_EBU_PCC_CON_IREQ_RISING_EDGE |
++		      LTQ_EBU_PCC_CON_IREQ_FALLING_EDGE;
++		break;
++
++	case IRQ_TYPE_LEVEL_HIGH:
++		val = LTQ_EBU_PCC_CON_IREQ_LEVEL_DETECT |
++		      LTQ_EBU_PCC_CON_IREQ_RISING_EDGE;
++		break;
++
++	case IRQ_TYPE_LEVEL_LOW:
++		val = LTQ_EBU_PCC_CON_IREQ_LEVEL_DETECT |
++		      LTQ_EBU_PCC_CON_IREQ_FALLING_EDGE;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	regmap_update_bits(priv->regmap, LTQ_EBU_PCC_CON,
++			   LTQ_EBU_PCC_CON_IREQ_MASK, val);
++
++	return 0;
++}
++
++static struct irq_chip ltq_ebu_irq_chip = {
++	.name = "EBU",
++	.irq_ack = ltq_ebu_ack_irq,
++	.irq_mask = ltq_ebu_mask_irq,
++	.irq_unmask = ltq_ebu_unmask_irq,
++	.irq_set_type = ltq_ebu_set_irq_type,
++};
++
++static void ltq_ebu_irq_handler(struct irq_desc *desc)
++{
++	struct ltq_ebu_irq_priv *priv = irq_desc_get_handler_data(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
++	u32 istat = 0;
++
++	chained_irq_enter(chip, desc);
++
++	regmap_read(priv->regmap, LTQ_EBU_ISTAT, &istat);
++
++	if (unlikely(!(istat & (LTQ_EBU_ISTAT_PCI | LTQ_EBU_ISTAT_ECC)))) {
++		/*
++		 * EBU likes to generate spurious interrupts. ACK'ing all
++		 * pending interrupts together with the PCI interrupt also
++		 * ACK's the spurious EBU interrupt.
++		 */
++		regmap_update_bits(priv->regmap, LTQ_EBU_ISTAT,
++				   LTQ_EBU_ISTAT_PCI, LTQ_EBU_ISTAT_PCI);
++		chained_irq_exit(chip, desc);
++		return;
++	}
++
++	if (istat & LTQ_EBU_ISTAT_PCI)
++		generic_handle_domain_irq(priv->domain, 0);
++	if (istat & LTQ_EBU_ISTAT_ECC)
++		generic_handle_domain_irq(priv->domain, 1);
++
++	chained_irq_exit(chip, desc);
++}
++
++static int ltq_ebu_irq_domain_alloc(struct irq_domain *domain,
++				    unsigned int virq, unsigned int nr_irqs,
++				    void *arg)
++{
++	struct ltq_ebu_irq_priv *priv = domain->host_data;
++	struct irq_fwspec *fwspec = arg;
++	irq_hw_number_t hwirq;
++	unsigned int type;
++	int ret;
++
++	if (nr_irqs != 1)
++		return -EINVAL;
++
++	ret = irq_domain_translate_twocell(domain, fwspec, &hwirq, &type);
++	if (ret)
++		return ret;
++
++	irq_domain_set_info(domain, virq, hwirq, &ltq_ebu_irq_chip, priv,
++			    handle_level_irq, NULL, NULL);
++
++	return 0;
++}
++
++static const struct irq_domain_ops ltq_ebu_irqdomain_ops = {
++	.translate	= irq_domain_translate_twocell,
++	.alloc		= ltq_ebu_irq_domain_alloc,
++	.free		= irq_domain_free_irqs_common,
++};
++
++static const struct regmap_range ebu_regmap_ranges[] = {
++	{ .range_min = 0x00, .range_max = 0x00 }, /* CLC */
++	{ .range_min = 0x08, .range_max = 0x08 }, /* ID */
++	{ .range_min = 0x10, .range_max = 0x10 }, /* CON */
++	{ .range_min = 0x20, .range_max = 0x2c }, /* ADDRSEL0..3 */
++	{ .range_min = 0x60, .range_max = 0x6c }, /* BUSCON0..3 */
++	{ .range_min = LTQ_EBU_PCC_CON, .range_max = LTQ_EBU_PCC_CON },
++	{ .range_min = 0x94, .range_max = 0x94 }, /* PCC_STAT */
++	{ .range_min = LTQ_EBU_ISTAT, .range_max = LTQ_EBU_ISTAT },
++	{ .range_min = LTQ_EBU_IEN, .range_max = LTQ_EBU_IEN },
++	{ .range_min = 0xa8, .range_max = 0xa8 }, /* INT_OUT */
++	{ .range_min = 0xac, .range_max = 0xac }, /* PCC_IRS */
++	{ .range_min = 0xb0, .range_max = 0xb0 }, /* NAND_CON */
++	{ .range_min = 0xb4, .range_max = 0xb4 }, /* NAND_WAIT */
++	{ .range_min = 0xb8, .range_max = 0xb8 }, /* NAND_ECC0 */
++	{ .range_min = 0xbc, .range_max = 0xbc }, /* NAND_ECC_AC */
++	{ .range_min = 0xc0, .range_max = 0xc0 }, /* NAND_ECC_CR */
++};
++
++static const struct regmap_access_table ebu_regmap_access_table = {
++	.yes_ranges = ebu_regmap_ranges,
++	.n_yes_ranges = ARRAY_SIZE(ebu_regmap_ranges),
++};
++
++static const struct regmap_config ebu_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 32,
++	.reg_stride = 4,
++	.max_register = 0xc0,
++	.wr_table = &ebu_regmap_access_table,
++	.rd_table = &ebu_regmap_access_table,
++};
++
++static int ltq_ebu_clk_prepare_enable(struct device *dev, struct clk *clk)
++{
++	int ret;
++
++	ret = clk_prepare_enable(clk);
++	if (ret)
++		return ret;
++
++	devm_add_action_or_reset(dev,
++				 (void(*)(void *))clk_disable_unprepare,
++				 clk);
++
++	return 0;
++}
++
++static int ltq_ebu_probe(struct platform_device *pdev)
++{
++	const struct ltq_ebu_data *ebu_data;
++	struct ltq_ebu_irq_priv *irq_priv;
++	struct regmap *regmap;
++	struct clk *clk;
++	int irq, ret;
++
++	clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(clk))
++		return dev_err_probe(&pdev->dev, PTR_ERR(clk),
++				     "Failed to get the EBU clock\n");
++
++	ret = ltq_ebu_clk_prepare_enable(&pdev->dev, clk);
++	if (ret)
++		return dev_err_probe(&pdev->dev, ret,
++				     "Failed to enable the EBU clock\n");
++
++	ltq_ebu_membase = devm_platform_ioremap_resource(pdev, 0);
++	if (IS_ERR(ltq_ebu_membase))
++		return dev_err_probe(&pdev->dev, PTR_ERR(ltq_ebu_membase),
++				     "Failed to map the EBU address space\n");
++
++	regmap = devm_regmap_init_mmio(&pdev->dev, ltq_ebu_membase,
++				       &ebu_regmap_config);
++	if (IS_ERR(regmap))
++		return dev_err_probe(&pdev->dev, PTR_ERR(regmap),
++				     "Failed to register EBU MMIO regmap\n");
++
++	ebu_data = of_device_get_match_data(&pdev->dev);
++	if (ebu_data && ebu_data->initialize_buscon0_wrdis) {
++		regmap_update_bits(regmap, LTQ_EBU_BUSCON0,
++				   LTQ_EBU_BUSCON_WRDIS, 0);
++	}
++
++	if (device_property_read_bool(&pdev->dev, "interrupt-controller")) {
++		/* Mask and ack any pending IRQ */
++		regmap_write(regmap, LTQ_EBU_IEN, 0);
++		regmap_write(regmap, LTQ_EBU_ISTAT, ~0);
++
++		irq = platform_get_irq(pdev, 0);
++		if (irq < 0)
++			return irq;
++
++		irq_priv = devm_kzalloc(&pdev->dev, sizeof(*irq_priv),
++					GFP_KERNEL);
++		if (!irq_priv)
++			return -ENOMEM;
++
++		irq_priv->regmap = regmap;
++		irq_priv->domain = irq_domain_add_linear(pdev->dev.of_node, 2,
++							 &ltq_ebu_irqdomain_ops,
++							 irq_priv);
++		if (!irq_priv->domain)
++			return -ENOMEM;
++
++		irq_set_chained_handler_and_data(irq, ltq_ebu_irq_handler,
++						 irq_priv);
++	}
++
++	ret = devm_of_platform_populate(&pdev->dev);
++	if (ret)
++		return dev_err_probe(&pdev->dev, ret,
++				     "Failed to populate child devices\n");
++
++	return 0;
++}
++
++static const struct ltq_ebu_data ltq_ebu_falcon_data = {
++	.initialize_buscon0_wrdis = false,
++};
++
++static const struct ltq_ebu_data ltq_ebu_xway_data = {
++	.initialize_buscon0_wrdis = true,
++};
++
++static const struct of_device_id ltq_ebu_of_ids[] = {
++	{
++		/* DEPRECATED */
++		.compatible = "lantiq,ebu-falcon",
++		.data = &ltq_ebu_falcon_data,
++	},
++	{
++		/* DEPRECATED */
++		.compatible = "lantiq,ebu-xway",
++		.data = &ltq_ebu_xway_data,
++	},
++	{
++		.compatible = "lantiq,ase-ebu",
++		.data = &ltq_ebu_xway_data,
++	},
++	{
++		.compatible = "lantiq,danube-ebu",
++		.data = &ltq_ebu_xway_data,
++	},
++	{
++		.compatible = "lantiq,falcon-ebu",
++		.data = &ltq_ebu_falcon_data,
++	},
++	{
++		.compatible = "lantiq,xrx100-ebu",
++		.data = &ltq_ebu_xway_data,
++	},
++	{
++		.compatible = "lantiq,xrx200-ebu",
++		.data = &ltq_ebu_xway_data,
++	},
++	{ /* sentinel */ }
++};
++
++static struct platform_driver ltq_ebu_driver = {
++	.probe = ltq_ebu_probe,
++	.driver = {
++		.name = "ltq-ebu",
++		.of_match_table = ltq_ebu_of_ids,
++	},
++};
++builtin_platform_driver(ltq_ebu_driver);
+-- 
+2.47.2
+

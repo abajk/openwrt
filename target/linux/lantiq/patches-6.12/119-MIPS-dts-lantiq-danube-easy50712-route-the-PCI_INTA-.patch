@@ -1,0 +1,42 @@
+From 8ec24b6d7c28fe01eb9429f6610aa7db9027dc9a Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Sat, 27 Jul 2019 14:34:35 +0200
+Subject: [PATCH 119/121] MIPS: dts: lantiq: danube: easy50712: route the
+ PCI_INTA IRQ through EBU
+
+EBU provides an interrupt line for the PCI_INTA interrupt. Route
+easy50712's PCI interrupt to EBU so the interrupt line is configured
+correctly (using IRQ_TYPE_LEVEL_LOW, this was previously hardcoded in
+the PCI driver) and ACKed properly.
+
+Acked-by: Hauke Mehrtens <hauke@hauke-m.de>
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ arch/mips/boot/dts/lantiq/danube_easy50712.dts | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/mips/boot/dts/lantiq/danube_easy50712.dts b/arch/mips/boot/dts/lantiq/danube_easy50712.dts
+index 1ce20b7d05cb..33c26b93cfc9 100644
+--- a/arch/mips/boot/dts/lantiq/danube_easy50712.dts
++++ b/arch/mips/boot/dts/lantiq/danube_easy50712.dts
+@@ -1,6 +1,8 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /dts-v1/;
+ 
++#include <dt-bindings/interrupt-controller/irq.h>
++
+ /include/ "danube.dtsi"
+ 
+ / {
+@@ -105,7 +107,7 @@ pci@e105400 {
+ 			lantiq,bus-clock = <33333333>;
+ 			interrupt-map-mask = <0xf800 0x0 0x0 0x7>;
+ 			interrupt-map = <
+-				0x7000 0 0 1 &icu0 29 1 // slot 14, irq 29
++				0x7000 0 0 1 &ebu0 0 IRQ_TYPE_LEVEL_LOW // slot 14
+ 			>;
+ 			gpios-reset = <&gpio 21 0>;
+ 			req-mask = <0x1>;		/* GNT1 */
+-- 
+2.47.2
+

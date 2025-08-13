@@ -1,0 +1,33 @@
+From 7df3d2829226eec4302e52055235ae1980c34b1e Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Thu, 26 May 2022 16:25:09 +0200
+Subject: [PATCH 104/121] dt-bindings: pinctrl: xway: Document the
+ interrupt-parent property
+
+The GPIO controller on XWAY SoCs can use select pins as external
+interrupts. Document the interrupt-parent property which specifies the
+interrupt controller which actually handles these interrupts (meaning it
+is external to the GPIO/pin controller).
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ .../devicetree/bindings/pinctrl/lantiq,pinctrl-xway.txt        | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/lantiq,pinctrl-xway.txt b/Documentation/devicetree/bindings/pinctrl/lantiq,pinctrl-xway.txt
+index 6bd9bc61becb..5d79f3443885 100644
+--- a/Documentation/devicetree/bindings/pinctrl/lantiq,pinctrl-xway.txt
++++ b/Documentation/devicetree/bindings/pinctrl/lantiq,pinctrl-xway.txt
+@@ -10,6 +10,9 @@ Required properties:
+ - reg: Should contain the physical address and length of the gpio/pinmux
+   register range
+ 
++Optional propertie:
++- interrupt-parent: phandle to the EIU interrupt controller
++
+ Please refer to pinctrl-bindings.txt in this directory for details of the
+ common pinctrl bindings used by client devices, including the meaning of the
+ phrase "pin configuration node".
+-- 
+2.47.2
+

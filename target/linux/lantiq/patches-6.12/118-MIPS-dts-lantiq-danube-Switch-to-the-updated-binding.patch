@@ -1,0 +1,47 @@
+From 52343dde1345fbb6ad92e76340a44b8fa897bc58 Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Wed, 10 Jul 2019 21:10:16 +0200
+Subject: [PATCH 118/121] MIPS: dts: lantiq: danube: Switch to the updated
+ binding
+
+The EBU IP takes one interrupt line and based on that provides two
+interrupt lines itself:
+- PCI_INTA (on SoCs with PCI support)
+- NAND ECC
+
+Mark the ebu0 node as interrupt-controller and pass the parent
+interrupt from ICU. Also Update the compatible string and add all new
+properties from the dt-bindings.
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ arch/mips/boot/dts/lantiq/danube.dtsi | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/mips/boot/dts/lantiq/danube.dtsi b/arch/mips/boot/dts/lantiq/danube.dtsi
+index 7a7ba66aa534..d83b3126d653 100644
+--- a/arch/mips/boot/dts/lantiq/danube.dtsi
++++ b/arch/mips/boot/dts/lantiq/danube.dtsi
+@@ -86,8 +86,18 @@ dma0: dma@e104100 {
+ 		};
+ 
+ 		ebu0: ebu@e105300 {
+-			compatible = "lantiq,ebu-xway";
++			compatible = "lantiq,danube-ebu";
+ 			reg = <0xe105300 0x100>;
++
++			interrupt-parent = <&icu0>;
++			interrupts = <30>;
++			#interrupt-cells = <2>;
++
++			big-endian;
++
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
+ 		};
+ 
+ 		pci0: pci@e105400 {
+-- 
+2.47.2
+

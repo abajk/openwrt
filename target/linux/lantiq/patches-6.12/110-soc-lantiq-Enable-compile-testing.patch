@@ -1,0 +1,104 @@
+From a45fe5cff9825d452c84600ffce0517b6af338d2 Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Tue, 28 Jun 2022 21:35:55 +0200
+Subject: [PATCH 110/121] soc: lantiq: Enable compile-testing
+
+Update the fpi-bus driver to be independent of any architecture specific
+code, in this case: ltq_w32_mask() and enable compile-testing for this
+driver.
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ drivers/soc/Kconfig          | 1 +
+ drivers/soc/Makefile         | 2 +-
+ drivers/soc/lantiq/Kconfig   | 6 ++++++
+ drivers/soc/lantiq/Makefile  | 2 +-
+ drivers/soc/lantiq/fpi-bus.c | 8 ++++----
+ 5 files changed, 13 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/soc/lantiq/Kconfig
+
+diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+index a2d65adffb80..d988ba26135d 100644
+--- a/drivers/soc/Kconfig
++++ b/drivers/soc/Kconfig
+@@ -13,6 +13,7 @@ source "drivers/soc/fujitsu/Kconfig"
+ source "drivers/soc/hisilicon/Kconfig"
+ source "drivers/soc/imx/Kconfig"
+ source "drivers/soc/ixp4xx/Kconfig"
++source "drivers/soc/lantiq/Kconfig"
+ source "drivers/soc/litex/Kconfig"
+ source "drivers/soc/loongson/Kconfig"
+ source "drivers/soc/mediatek/Kconfig"
+diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+index c9e689080ceb..dc7c9226581f 100644
+--- a/drivers/soc/Makefile
++++ b/drivers/soc/Makefile
+@@ -17,7 +17,7 @@ obj-$(CONFIG_ARCH_GEMINI)	+= gemini/
+ obj-y				+= hisilicon/
+ obj-y				+= imx/
+ obj-y				+= ixp4xx/
+-obj-$(CONFIG_SOC_XWAY)		+= lantiq/
++obj-y				+= lantiq/
+ obj-$(CONFIG_LITEX_SOC_CONTROLLER) += litex/
+ obj-y				+= loongson/
+ obj-y				+= mediatek/
+diff --git a/drivers/soc/lantiq/Kconfig b/drivers/soc/lantiq/Kconfig
+new file mode 100644
+index 000000000000..c4cd30e553cd
+--- /dev/null
++++ b/drivers/soc/lantiq/Kconfig
+@@ -0,0 +1,6 @@
++config LANTIQ_FPI_BUS
++	tristate "Lantiq FPI bus"
++	depends on SOC_XWAY || COMPILE_TEST
++	default SOC_XWAY
++	help
++	  Enable support for the FPI bus on Lantiq XWAY SoCs
+diff --git a/drivers/soc/lantiq/Makefile b/drivers/soc/lantiq/Makefile
+index 976f42f806c3..9f80533f4c0a 100644
+--- a/drivers/soc/lantiq/Makefile
++++ b/drivers/soc/lantiq/Makefile
+@@ -1,2 +1,2 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-obj-y				+= fpi-bus.o
++obj-$(CONFIG_LANTIQ_FPI_BUS)		+= fpi-bus.o
+diff --git a/drivers/soc/lantiq/fpi-bus.c b/drivers/soc/lantiq/fpi-bus.c
+index dff1375851cf..2cc2352d55b4 100644
+--- a/drivers/soc/lantiq/fpi-bus.c
++++ b/drivers/soc/lantiq/fpi-bus.c
+@@ -16,8 +16,6 @@
+ #include <linux/property.h>
+ #include <linux/regmap.h>
+ 
+-#include <lantiq_soc.h>
+-
+ #define XBAR_ALWAYS_LAST	0x430
+ #define XBAR_FPI_BURST_EN	BIT(1)
+ #define XBAR_AHB_BURST_EN	BIT(2)
+@@ -26,11 +24,11 @@
+ 
+ static int ltq_fpi_probe(struct platform_device *pdev)
+ {
++	u32 rcu_ahb_endianness_reg_offset, val;
+ 	struct device *dev = &pdev->dev;
+ 	struct device_node *np = dev->of_node;
+ 	struct regmap *rcu_regmap;
+ 	void __iomem *xbar_membase;
+-	u32 rcu_ahb_endianness_reg_offset;
+ 	int ret;
+ 
+ 	xbar_membase = devm_platform_ioremap_resource(pdev, 0);
+@@ -58,7 +56,9 @@ static int ltq_fpi_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* disable fpi burst */
+-	ltq_w32_mask(XBAR_FPI_BURST_EN, 0, xbar_membase + XBAR_ALWAYS_LAST);
++	val = ioread32be(xbar_membase + XBAR_ALWAYS_LAST);
++	val &= ~XBAR_FPI_BURST_EN;
++	iowrite32be(val, xbar_membase + XBAR_ALWAYS_LAST);
+ 
+ 	return of_platform_populate(dev->of_node, NULL, NULL, dev);
+ }
+-- 
+2.47.2
+

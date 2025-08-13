@@ -1,0 +1,28 @@
+From 6eaf0678969f51219e16b73cc598439445f44dd8 Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Thu, 26 May 2022 06:08:20 +0200
+Subject: [PATCH 116/121] MIPS: PCI: lantiq: Remove unused #include
+
+The <lantiq_irq.h> #include is not used anywhere. Drop this reference as
+that header is going to be removed.
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ arch/mips/pci/pci-lantiq.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/mips/pci/pci-lantiq.c b/arch/mips/pci/pci-lantiq.c
+index 43db0082913b..d822e0d320c7 100644
+--- a/arch/mips/pci/pci-lantiq.c
++++ b/arch/mips/pci/pci-lantiq.c
+@@ -20,7 +20,6 @@
+ #include <asm/addrspace.h>
+ 
+ #include <lantiq_soc.h>
+-#include <lantiq_irq.h>
+ 
+ #include "pci-lantiq.h"
+ 
+-- 
+2.47.2
+

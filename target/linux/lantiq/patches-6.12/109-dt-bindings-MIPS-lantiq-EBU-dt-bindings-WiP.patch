@@ -1,0 +1,101 @@
+From dfbdf2cd35d1241e2301915e522bc6ea69e353bf Mon Sep 17 00:00:00 2001
+From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+Date: Thu, 18 Jul 2019 20:06:51 +0200
+Subject: [PATCH 109/121] dt-bindings: MIPS: lantiq: EBU dt-bindings WiP
+
+WiP
+
+Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+---
+ .../bindings/mips/lantiq/lantiq,ebu.yaml      | 62 +++++++++++++++++--
+ 1 file changed, 56 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mips/lantiq/lantiq,ebu.yaml b/Documentation/devicetree/bindings/mips/lantiq/lantiq,ebu.yaml
+index 0fada1f085a9..4754460618c2 100644
+--- a/Documentation/devicetree/bindings/mips/lantiq/lantiq,ebu.yaml
++++ b/Documentation/devicetree/bindings/mips/lantiq/lantiq,ebu.yaml
+@@ -8,25 +8,75 @@ title: Lantiq Xway SoC series External Bus Unit (EBU)
+ 
+ maintainers:
+   - John Crispin <john@phrozen.org>
++  - Martin Blumenstingl <martin.blumenstingl@googlemail.com>
+ 
+ properties:
+   compatible:
+-    items:
+-      - enum:
+-          - lantiq,ebu-xway
++    enum:
++      - lantiq,ebu-falcon # deprecated
++      - lantiq,ebu-xway # deprecated
++      - lantiq,falcon-ebu
++      - lantiq,ase-ebu
++      - lantiq,danube-ebu
++      - lantiq,xrx100-ebu
++      - lantiq,xrx200-ebu
+ 
+   reg:
+     maxItems: 1
+ 
++  clocks:
++    minItems: 1
++
++  interrupt-controller: true
++
++  '#interrupt-cells':
++    const: 2
++
++  '#address-cells':
++    const: 1
++
++  '#size-cells':
++    const: 1
++
++  ranges: true
++
++  interrupts:
++    minItems: 1
++
++  big-endian: true
++
+ required:
+   - compatible
+   - reg
++  - clocks
+ 
+ additionalProperties: false
+ 
+ examples:
+   - |
+-    ebu@105300 {
+-        compatible = "lantiq,ebu-xway";
+-        reg = <0x105300 0x100>;
++    bus@e105300 {
++        compatible = "lantiq,ase-ebu";
++        reg = <0xe105300 0x100>;
++
++        clocks = <&pmu 10>;
++
++        big-endian;
++    };
++  - |
++    bus@e105300 {
++        compatible = "lantiq,xrx200-ebu";
++        reg = <0xe105300 0x100>;
++
++        clocks = <&pmu 10>;
++
++        interrupt-controller;
++        #interrupt-cells = <2>;
++        interrupts = <30>;
++
++        big-endian;
++
++        #address-cells = <1>;
++        #size-cells = <1>;
++        ranges;
+     };
++...
+-- 
+2.47.2
+
