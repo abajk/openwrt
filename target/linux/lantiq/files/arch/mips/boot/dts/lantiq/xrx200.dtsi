@@ -25,7 +25,16 @@
 		};
 	};
 
-	biu@1f800000 {
+	cpuintc: cpuintc {
+		compatible = "mti,cpu-interrupt-controller";
+
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+
+		interrupt-controller;
+	};
+
+	localbus@1f800000 {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "simple-bus";
@@ -35,13 +44,15 @@
 		icu0: icu@80200 {
 			#interrupt-cells = <1>;
 			interrupt-controller;
+			interrupt-parent = <&cpuintc>;
+			interrupts = <2>, <3>, <4>, <5>, <6>;
 			compatible = "lantiq,icu";
 			reg = <0x80200 0xc8	/* icu0 */
 			       0x80300 0xc8>;	/* icu1 */
 		};
 	};
 
-	sram@1f000000 {
+	localbus@1f000000 {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "simple-bus";
@@ -68,7 +79,7 @@
 		};
 	};
 
-	fpi@10000000 {
+	localbus@10000000 {
 		compatible = "lantiq,xrx200-fpi", "simple-bus";
 		ranges = <0x0 0x10000000 0xf000000>;
 		reg =	<0x1f400000 0x1000>,
