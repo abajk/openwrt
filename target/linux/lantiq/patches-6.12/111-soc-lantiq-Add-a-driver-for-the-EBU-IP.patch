@@ -1,7 +1,7 @@
-From 0e4d5c23dcce94caa4ce90fffd4a53428f203d11 Mon Sep 17 00:00:00 2001
+From 43451c2dcdabf01e16a4417e55e35807efee6adb Mon Sep 17 00:00:00 2001
 From: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
 Date: Tue, 5 Jan 2021 19:01:15 +0100
-Subject: [PATCH 111/121] soc: lantiq: Add a driver for the EBU IP
+Subject: [PATCH] soc: lantiq: Add a driver for the EBU IP
 
 Both SoC types have the EBU registers and exposing the ltq_ebu_membase
 in (the SoC-independent) arch/mips/include/asm/mach-lantiq/lantiq.h.
@@ -21,14 +21,14 @@ Signed-off-by: Martin Blumenstingl <martin.blumenstingl@googlemail.com>
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
  .../include/asm/mach-lantiq/xway/lantiq_soc.h |   5 -
- arch/mips/lantiq/falcon/sysctrl.c             |  16 +-
+ arch/mips/lantiq/falcon/sysctrl.c             |  17 +-
  arch/mips/lantiq/irq.c                        |  11 -
- arch/mips/lantiq/xway/sysctrl.c               |  21 +-
+ arch/mips/lantiq/xway/sysctrl.c               |  22 +-
  arch/mips/pci/pci-lantiq.c                    |   4 -
  drivers/soc/lantiq/Kconfig                    |   9 +
  drivers/soc/lantiq/Makefile                   |   1 +
  drivers/soc/lantiq/ebu.c                      | 351 ++++++++++++++++++
- 8 files changed, 370 insertions(+), 48 deletions(-)
+ 8 files changed, 370 insertions(+), 50 deletions(-)
  create mode 100644 drivers/soc/lantiq/ebu.c
 
 diff --git a/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h b/arch/mips/include/asm/mach-lantiq/xway/lantiq_soc.h
@@ -50,7 +50,7 @@ index dd9f621d0204..e4efdda949ac 100644
  /* WDT */
  #define LTQ_RST_CAUSE_WDTRST	0x20
 diff --git a/arch/mips/lantiq/falcon/sysctrl.c b/arch/mips/lantiq/falcon/sysctrl.c
-index 577e6e6309a6..e34ef7ae5f20 100644
+index 577e6e6309a6..1b283b4625f4 100644
 --- a/arch/mips/lantiq/falcon/sysctrl.c
 +++ b/arch/mips/lantiq/falcon/sysctrl.c
 @@ -71,7 +71,7 @@
@@ -62,7 +62,7 @@ index 577e6e6309a6..e34ef7ae5f20 100644
  
  static inline void sysctl_wait(struct clk *clk,
  		unsigned int test, unsigned int reg)
-@@ -182,23 +182,20 @@ void __init ltq_soc_init(void)
+@@ -182,38 +182,32 @@ void __init ltq_soc_init(void)
  {
  	struct device_node *np_status =
  		of_find_compatible_node(NULL, NULL, "lantiq,status-falcon");
@@ -88,7 +88,13 @@ index 577e6e6309a6..e34ef7ae5f20 100644
  			of_address_to_resource(np_sys1, 0, &res_sys[0]) ||
  			of_address_to_resource(np_syseth, 0, &res_sys[1]) ||
  			of_address_to_resource(np_sysgpe, 0, &res_sys[2]))
-@@ -212,8 +209,6 @@ void __init ltq_soc_init(void)
+ 		panic("Failed to get core resources");
+ 
+ 	of_node_put(np_status);
+-	of_node_put(np_ebu);
+ 	of_node_put(np_sys1);
+ 	of_node_put(np_syseth);
+ 	of_node_put(np_sysgpe);
  
  	if ((!request_mem_region(res_status.start, resource_size(&res_status),
  				 res_status.name)) ||
@@ -97,7 +103,7 @@ index 577e6e6309a6..e34ef7ae5f20 100644
  	    (!request_mem_region(res_sys[0].start, resource_size(&res_sys[0]),
  				 res_sys[0].name)) ||
  	    (!request_mem_region(res_sys[1].start, resource_size(&res_sys[1]),
-@@ -224,10 +219,7 @@ void __init ltq_soc_init(void)
+@@ -224,10 +218,7 @@ void __init ltq_soc_init(void)
  
  	status_membase = ioremap(res_status.start,
  					resource_size(&res_status));
@@ -139,7 +145,7 @@ index 961c55933a6d..20d6c10063c1 100644
  
  static int icu_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
 diff --git a/arch/mips/lantiq/xway/sysctrl.c b/arch/mips/lantiq/xway/sysctrl.c
-index 5a75283d17f1..86d18080963d 100644
+index 5a75283d17f1..71f171063e0d 100644
 --- a/arch/mips/lantiq/xway/sysctrl.c
 +++ b/arch/mips/lantiq/xway/sysctrl.c
 @@ -148,7 +148,6 @@ static u32 pmu_clk_cr_b[] = {
@@ -150,7 +156,7 @@ index 5a75283d17f1..86d18080963d 100644
  
  static u32 ifccr = CGU_IFCCR;
  static u32 pcicr = CGU_PCICR;
-@@ -442,21 +441,18 @@ static void clkdev_add_clkout(void)
+@@ -442,46 +441,35 @@ static void clkdev_add_clkout(void)
  /* bring up all register ranges that we need for basic system control */
  void __init ltq_soc_init(void)
  {
@@ -175,7 +181,9 @@ index 5a75283d17f1..86d18080963d 100644
  		panic("Failed to get core resources");
  
  	of_node_put(np_pmu);
-@@ -466,22 +462,15 @@ void __init ltq_soc_init(void)
+ 	of_node_put(np_cgu);
+-	of_node_put(np_ebu);
+ 
  	if (!request_mem_region(res_pmu.start, resource_size(&res_pmu),
  				res_pmu.name) ||
  		!request_mem_region(res_cgu.start, resource_size(&res_cgu),
