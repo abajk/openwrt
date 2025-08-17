@@ -1,0 +1,92 @@
+From 819f1eac93e2efa12bed1f15cf02a603db9c22b6 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Mon, 6 Apr 2026 22:21:37 +0200
+Subject: [PATCH] net: phy: realtek: add PHY-level statistics via ethtool
+
+Report PCS receive error counts on RTL8211E PHYs.
+
+Accumulate the vendor-specific PHY_ERRCNT read-clear counter
+(SEL=RXERR) in .update_stats() and expose it as both IEEE 802.3
+SymbolErrorDuringCarrier and generic rx_errors via
+.get_phy_stats().
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/phy/realtek/realtek_main.c | 33 ++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/drivers/net/phy/realtek/realtek_main.c b/drivers/net/phy/realtek/realtek_main.c
+index 177b62a7b2d1..10851520d7b8 100644
+--- a/drivers/net/phy/realtek/realtek_main.c
++++ b/drivers/net/phy/realtek/realtek_main.c
+@@ -54,6 +54,8 @@
+ 
+ #define RTL821x_INSR				0x13
+ 
++#define RTL8211E_RXERC				0x18
++
+ #define RTL821x_EXT_PAGE_SELECT			0x1e
+ 
+ #define RTL821x_PAGE_SELECT			0x1f
+@@ -336,6 +338,8 @@ struct rtl821x_priv {
+ 	bool enable_rxc_ssc;
+ 	bool enable_sysclk_ssc;
+ 	struct clk *clk;
++	/* rtl8211e */
++	u64 rx_errors;
+ 	/* rtl8211f */
+ 	u16 iner;
+ };
+@@ -3029,6 +3033,32 @@ static int rtl8221b_config_intr(struct phy_device *phydev)
+ 	return err;
+ }
+ 
++static int rtl8211e_update_stats(struct phy_device *phydev)
++{
++	struct rtl821x_priv *priv = phydev->priv;
++	int ret;
++
++	/* RTL8211E_RXERR: 16-bit read-clear counter */
++	ret = phy_read(phydev, RTL8211E_RXERC);
++	if (ret < 0)
++		return ret;
++
++	priv->rx_errors += ret;
++
++	return 0;
++}
++
++static void rtl8211e_get_phy_stats(struct phy_device *phydev,
++				   struct ethtool_eth_phy_stats *eth_stats,
++				   struct ethtool_phy_stats *stats)
++{
++	struct rtl821x_priv *priv = phydev->priv;
++
++	eth_stats->SymbolErrorDuringCarrier = priv->rx_errors;
++	stats->rx_errors = priv->rx_errors;
++}
++
++
+ static irqreturn_t rtl8221b_handle_interrupt(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -3146,6 +3176,7 @@ static struct phy_driver realtek_drvs[] = {
+ 	}, {
+ 		PHY_ID_MATCH_EXACT(0x001cc915),
+ 		.name		= "RTL8211E Gigabit Ethernet",
++		.probe		= rtl821x_probe,
+ 		.config_init	= &rtl8211e_config_init,
+ 		.config_intr	= &rtl8211e_config_intr,
+ 		.handle_interrupt = rtl821x_handle_interrupt,
+@@ -3156,6 +3187,8 @@ static struct phy_driver realtek_drvs[] = {
+ 		.led_hw_is_supported = rtl8211x_led_hw_is_supported,
+ 		.led_hw_control_get = rtl8211e_led_hw_control_get,
+ 		.led_hw_control_set = rtl8211e_led_hw_control_set,
++		.update_stats	= rtl8211e_update_stats,
++		.get_phy_stats	= rtl8211e_get_phy_stats,
+ 	}, {
+ 		PHY_ID_MATCH_EXACT(0x001cc916),
+ 		.name		= "RTL8211F Gigabit Ethernet",
+-- 
+2.53.0
+

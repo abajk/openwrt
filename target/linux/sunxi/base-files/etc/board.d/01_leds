@@ -12,6 +12,10 @@ friendlyarm,nanopi-r1s-h5)
 	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth0"
 	ucidef_set_led_netdev "lan" "LAN" "green:lan" "eth1"
 	;;
+xunlong,orangepi-pc2)
+	ucidef_set_led_netdev "lan1" "lan1" "mdio_mux-0.2:01:amber:lan" "eth0" "tx rx"
+	ucidef_set_led_netdev "lan2" "lan2" "mdio_mux-0.2:01:green:lan" "eth0" "link_10 link_100 link_1000"
+	;;
 esac
 
 board_config_flush
