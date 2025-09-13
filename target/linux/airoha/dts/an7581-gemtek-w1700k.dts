@@ -138,6 +138,20 @@
 		pins = "gpio17";
 		output-enable;
 	};
+
+	uart2_pins: uart2-pins {
+		mux {
+			function = "uart";
+			groups = "uart2";
+		};
+	};
+
+	hsuart_pins: hsuart-pins {
+		mux {
+			function = "uart";
+			groups = "hsuart";
+		};
+	};
 };
 
 &snfi {
@@ -343,4 +357,18 @@
 
 &gsw_port4 {
 	status = "disabled";
+};
+
+&uart2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2_pins>;
+	clock-frequency = <1843200>;
+};
+
+&hsuart3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&hsuart_pins>;
+	clock-frequency = <1843200>;
 };
