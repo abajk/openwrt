@@ -65,7 +65,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +#define UART_AIROHA_XINCLKDR	10
 +#define UART_AIROHA_XYD		11
 +
-+#define XYD_Y 65000
++#define XYD_Y 12500
 +#define XINDIV_CLOCK 20000000
 +#define UART_BRDL_20M 0x01
 +#define UART_BRDH_20M 0x00
@@ -118,7 +118,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +	for (i = 0 ; i < ARRAY_SIZE(clock_div_tab) ; i++) {
 +		denom = (XINDIV_CLOCK/40) / clock_div_tab[i];
 +		nom = baud * (XYD_Y/40);
-+		xyd_x = ((nom/denom) << 4) >> hs;
++		xyd_x = ((nom/denom) << 4);
 +		if (xyd_x < XYD_Y)
 +			break;
 +	}
