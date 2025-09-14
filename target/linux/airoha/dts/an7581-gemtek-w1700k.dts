@@ -344,12 +344,12 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
-	clock-frequency = <1843200>;
+//	clock-frequency = <1843200>;
 };
 
 &hsuart3 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&hsuart_pins>;
-	clock-frequency = <1843200>;
+//	clock-frequency = <1843200>;
 };
