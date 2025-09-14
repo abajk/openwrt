@@ -395,7 +395,7 @@
 		};
 
 		uart2: serial@1fbf0300 {
-			compatible = "airoha,en7523-uart";
+			compatible = "airoha,airoha-uart";
 			reg = <0x0 0x1fbf0300 0x0 0x30>;
 			reg-io-width = <4>;
 			reg-shift = <2>;
@@ -406,7 +406,7 @@
 		};
 
 		hsuart3: serial@1fbe1000 {
-			compatible = "airoha,en7523-uart";
+			compatible = "airoha,airoha-hsuart";
 			reg = <0x0 0x1fbe1000 0x0 0x40>;
 			reg-io-width = <4>;
 			reg-shift = <2>;
@@ -417,7 +417,7 @@
 		};
 
 		uart4: serial@1fbf0600 {
-			compatible = "airoha,en7523-uart";
+			compatible = "airoha,airoha-uart";
 			reg = <0x0 0x1fbf0600 0x0 0x30>;
 			reg-io-width = <4>;
 			reg-shift = <2>;
@@ -428,7 +428,7 @@
 		};
 
 		uart5: serial@1fbf0700 {
-			compatible = "airoha,en7523-uart";
+			compatible = "airoha,airoha-uart";
 			reg = <0x0 0x1fbf0700 0x0 0x30>;
 			reg-io-width = <4>;
 			reg-shift = <2>;

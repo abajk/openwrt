@@ -1,0 +1,211 @@
+From e12ebf14fa3654f68589292e645ae1ef74786638 Mon Sep 17 00:00:00 2001
+From: Benjamin Larsson <benjamin.larsson@genexis.eu>
+Date: Sun, 19 Jan 2025 14:01:05 +0100
+Subject: [PATCH] serial: Airoha SoC UART and HSUART support
+
+Support for Airoha AN7581 SoC UART and HSUART baud rate
+calculation routine.
+
+Signed-off-by: Benjamin Larsson <benjamin.larsson@genexis.eu>
+Link: https://lore.kernel.org/r/20250119130105.2833517-3-benjamin.larsson@genexis.eu
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/tty/serial/8250/8250.h        | 15 +++++
+ drivers/tty/serial/8250/8250_airoha.c | 81 +++++++++++++++++++++++++++
+ drivers/tty/serial/8250/8250_of.c     |  2 +
+ drivers/tty/serial/8250/8250_port.c   | 26 +++++++++
+ drivers/tty/serial/8250/Kconfig       | 10 ++++
+ drivers/tty/serial/8250/Makefile      |  1 +
+ 6 files changed, 135 insertions(+)
+ create mode 100644 drivers/tty/serial/8250/8250_airoha.c
+
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -296,6 +296,21 @@ static inline int serial8250_in_MCR(stru
+ bool alpha_jensen(void);
+ void alpha_jensen_set_mctrl(struct uart_port *port, unsigned int mctrl);
+ 
++/* uart_config[] table port type defines */
++/* Airoha UART */
++#define PORT_AIROHA	124
++
++/* Airoha HSUART */
++#define PORT_AIROHA_HS	125
++
++#ifdef CONFIG_SERIAL_8250_AIROHA
++void airoha8250_set_baud_rate(struct uart_port *port,
++			     unsigned int baud, unsigned int hs);
++#else
++static inline void airoha8250_set_baud_rate(struct uart_port *port,
++			     unsigned int baud, unsigned int hs) { }
++#endif
++
+ #ifdef CONFIG_SERIAL_8250_PNP
+ int serial8250_pnp_init(void);
+ void serial8250_pnp_exit(void);
+--- /dev/null
++++ b/drivers/tty/serial/8250/8250_airoha.c
+@@ -0,0 +1,81 @@
++// SPDX-License-Identifier: GPL-2.0+
++
++/*
++ * Airoha UART baud rate calculation function
++ *
++ * Copyright (c) 2025 Genexis Sweden AB
++ * Author: Benjamin Larsson <benjamin.larsson@genexis.eu>
++ */
++
++#include "8250.h"
++
++/* The Airoha UART is 16550-compatible except for the baud rate calculation. */
++
++/* Airoha UART registers */
++#define UART_AIROHA_BRDL	0
++#define UART_AIROHA_BRDH	1
++#define UART_AIROHA_XINCLKDR	10
++#define UART_AIROHA_XYD		11
++
++#define XYD_Y 65000
++#define XINDIV_CLOCK 20000000
++#define UART_BRDL_20M 0x01
++#define UART_BRDH_20M 0x00
++
++static const int clock_div_tab[] = { 10, 4, 2};
++static const int clock_div_reg[] = {  4, 2, 1};
++
++/**
++ * airoha8250_set_baud_rate() - baud rate calculation routine
++ * @port: uart port
++ * @baud: requested uart baud rate
++ * @hs: uart type selector, 0 for regular uart and 1 for high-speed uart
++ *
++ * crystal_clock = 20 MHz (fixed frequency)
++ * xindiv_clock = crystal_clock / clock_div
++ * (x/y) = XYD, 32 bit register with 16 bits of x and then 16 bits of y
++ * clock_div = XINCLK_DIVCNT (default set to 10 (0x4)),
++ *           - 3 bit register [ 1, 2, 4, 8, 10, 12, 16, 20 ]
++ *
++ * baud_rate = ((xindiv_clock) * (x/y)) / ([BRDH,BRDL] * 16)
++ *
++ * Selecting divider needs to fulfill
++ * 1.8432 MHz <= xindiv_clk <= APB clock / 2
++ * The clocks are unknown but a divider of value 1 did not result in a valid
++ * waveform.
++ *
++ * XYD_y seems to need to be larger then XYD_x for proper waveform generation.
++ * Setting [BRDH,BRDL] to [0,1] and XYD_y to 65000 gives even values
++ * for usual baud rates.
++ */
++
++void airoha8250_set_baud_rate(struct uart_port *port,
++			     unsigned int baud, unsigned int hs)
++{
++	struct uart_8250_port *up = up_to_u8250p(port);
++	unsigned int xyd_x, nom, denom;
++	int i;
++
++	/* set DLAB to access the baud rate divider registers (BRDH, BRDL) */
++	serial_port_out(port, UART_LCR, up->lcr | UART_LCR_DLAB);
++	/* set baud rate calculation defaults */
++	/* set BRDIV ([BRDH,BRDL]) to 1 */
++	serial_port_out(port, UART_AIROHA_BRDL, UART_BRDL_20M);
++	serial_port_out(port, UART_AIROHA_BRDH, UART_BRDH_20M);
++	/* calculate XYD_x and XINCLKDR register by searching
++	 * through a table of crystal_clock divisors
++	 *
++	 * for the HSUART xyd_x needs to be scaled by a factor of 2
++	 */
++	for (i = 0 ; i < ARRAY_SIZE(clock_div_tab) ; i++) {
++		denom = (XINDIV_CLOCK/40) / clock_div_tab[i];
++		nom = baud * (XYD_Y/40);
++		xyd_x = ((nom/denom) << 4) >> hs;
++		if (xyd_x < XYD_Y)
++			break;
++	}
++	serial_port_out(port, UART_AIROHA_XINCLKDR, clock_div_reg[i]);
++	serial_port_out(port, UART_AIROHA_XYD, (xyd_x<<16) | XYD_Y);
++	/* unset DLAB */
++	serial_port_out(port, UART_LCR, up->lcr);
++}
+--- a/drivers/tty/serial/8250/8250_of.c
++++ b/drivers/tty/serial/8250/8250_of.c
+@@ -338,6 +338,8 @@ static const struct of_device_id of_plat
+ 	{ .compatible = "ti,da830-uart", .data = (void *)PORT_DA830, },
+ 	{ .compatible = "nuvoton,wpcm450-uart", .data = (void *)PORT_NPCM, },
+ 	{ .compatible = "nuvoton,npcm750-uart", .data = (void *)PORT_NPCM, },
++	{ .compatible = "airoha,airoha-uart", .data = (void *)PORT_AIROHA, },
++	{ .compatible = "airoha,airoha-hsuart", .data = (void *)PORT_AIROHA_HS, },
+ 	{ /* end of list */ },
+ };
+ MODULE_DEVICE_TABLE(of, of_platform_serial_table);
+--- a/drivers/tty/serial/8250/8250_port.c
++++ b/drivers/tty/serial/8250/8250_port.c
+@@ -330,6 +330,24 @@ static const struct serial8250_config ua
+ 		.rxtrig_bytes	= {1, 8, 16, 30},
+ 		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
+ 	},
++	/* From here on after additional uart config port defines are placed in 8250.h
++	 */
++	[PORT_AIROHA] = {
++		.name		= "Airoha UART",
++		.fifo_size	= 8,
++		.tx_loadsz	= 1,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_01 | UART_FCR_CLEAR_RCVR,
++		.rxtrig_bytes	= {1, 4},
++		.flags		= UART_CAP_FIFO,
++	},
++	[PORT_AIROHA_HS] = {
++		.name		= "Airoha HSUART",
++		.fifo_size	= 128,
++		.tx_loadsz	= 128,
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_01 | UART_FCR_CLEAR_RCVR,
++		.rxtrig_bytes	= {1, 4},
++		.flags		= UART_CAP_FIFO,
++	},
+ };
+ 
+ /* Uart divisor latch read */
+@@ -2889,6 +2907,14 @@ serial8250_do_set_termios(struct uart_po
+ 	serial8250_set_divisor(port, baud, quot, frac);
+ 
+ 	/*
++	 * Airoha SoCs have custom registers for baud rate settings
++	 */
++	if (port->type == PORT_AIROHA)
++		airoha8250_set_baud_rate(port, baud, 0);
++	if (port->type == PORT_AIROHA_HS)
++		airoha8250_set_baud_rate(port, baud, 1);
++
++	/*
+ 	 * LCR DLAB must be set to enable 64-byte FIFO mode. If the FCR
+ 	 * is written without DLAB set, this mode will be disabled.
+ 	 */
+--- a/drivers/tty/serial/8250/Kconfig
++++ b/drivers/tty/serial/8250/Kconfig
+@@ -354,6 +354,16 @@ config SERIAL_8250_ACORN
+ 	  system, say Y to this option.  The driver can handle 1, 2, or 3 port
+ 	  cards.  If unsure, say N.
+ 
++config SERIAL_8250_AIROHA
++	tristate "Airoha UART support"
++	depends on (ARCH_AIROHA || COMPILE_TEST) && OF && SERIAL_8250
++	help
++	  Selecting this option enables an Airoha SoC specific baud rate
++	  calculation routine on an otherwise 16550 compatible UART hardware.
++
++	  If you have an Airoha based board and want to use the serial port,
++	  say Y to this option. If unsure, say N.
++
+ config SERIAL_8250_BCM2835AUX
+ 	tristate "BCM2835 auxiliar mini UART support"
+ 	depends on ARCH_BCM2835 || COMPILE_TEST
+--- a/drivers/tty/serial/8250/Makefile
++++ b/drivers/tty/serial/8250/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_SERIAL_8250_EXAR)		+= 8250_
+ obj-$(CONFIG_SERIAL_8250_HP300)		+= 8250_hp300.o
+ obj-$(CONFIG_SERIAL_8250_CS)		+= serial_cs.o
+ obj-$(CONFIG_SERIAL_8250_ACORN)		+= 8250_acorn.o
++obj-$(CONFIG_SERIAL_8250_AIROHA)	+= 8250_airoha.o
+ obj-$(CONFIG_SERIAL_8250_ASPEED_VUART)	+= 8250_aspeed_vuart.o
+ obj-$(CONFIG_SERIAL_8250_BCM2835AUX)	+= 8250_bcm2835aux.o
+ obj-$(CONFIG_SERIAL_8250_CONSOLE)	+= 8250_early.o
