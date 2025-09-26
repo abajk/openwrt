@@ -276,9 +276,8 @@
 &gdm2 {
 	status = "okay";
 
-	phy-handle = <&phy8>;
+	phy-handle = <&phy5>;
 	phy-mode = "usxgmii";
-//	label = "wan";
 
 	nvmem-cells = <&wan_mac 0>;
 	nvmem-cell-names = "mac-address";
@@ -287,9 +286,8 @@
 &gdm4 {
 	status = "okay";
 
-	phy-handle = <&phy5>;
+	phy-handle = <&phy8>;
 	phy-mode = "usxgmii";
-//	label = "lan2";
 
 	nvmem-cells = <&lan_mac 0>;
 	nvmem-cell-names = "mac-address";
@@ -306,12 +304,14 @@
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <5>;
 			reset-gpios = <&en7581_pinctrl 46 GPIO_ACTIVE_LOW>;
+			realtek,pnswap-tx;
 		};
 
 		phy8: ethernet-phy@8 {
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <8>;
 			reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
+			realtek,pnswap-tx;
 		};
 	};
 };
