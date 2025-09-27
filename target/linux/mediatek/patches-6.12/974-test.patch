@@ -1,0 +1,59 @@
+From 0b3b6e98dc51e2003c0414fcf9af576c5c778802 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 31 Aug 2025 23:13:08 +0200
+Subject: [PATCH 3/3] test
+
+---
+ drivers/net/mdio/mdio-i2c.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/mdio/mdio-i2c.c b/drivers/net/mdio/mdio-i2c.c
+index cd6ea6b424e1..c67a54f8ac61 100644
+--- a/drivers/net/mdio/mdio-i2c.c
++++ b/drivers/net/mdio/mdio-i2c.c
+@@ -307,18 +307,21 @@ static int i2c_rollball_mii_poll(struct mii_bus *bus, int bus_addr, u8 *buf,
+ 	/* By experiment it takes up to 70 ms to access a register for these
+ 	 * SFPs. Sleep 20ms between iterations and try 10 times.
+ 	 */
+-	i = 10;
++	i = 200;
+ 	do {
+-		msleep(20);
++		msleep(1);
+ 
+ 		ret = i2c_transfer_rollball(i2c, msgs, ARRAY_SIZE(msgs));
+ 		if (ret)
+ 			return ret;
+ 
+-		if (*res == ROLLBALL_CMD_DONE)
++		if (*res == ROLLBALL_CMD_DONE) {
++			printk(KERN_ERR "%s:1 time=%d\n", __func__, 200 - i);
+ 			return 0;
++		}
+ 	} while (i-- > 0);
+ 
++	printk(KERN_ERR "%s:2 timeout\n", __func__);
+ 	dev_dbg(&bus->dev, "poll timed out\n");
+ 
+ 	return -ETIMEDOUT;
+@@ -354,6 +357,8 @@ static int i2c_mii_read_rollball(struct mii_bus *bus, int phy_id, int devad,
+ 	int bus_addr, ret;
+ 	u16 val;
+ 
++	msleep(25);
++
+ 	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d\n", __func__, phy_id, devad, reg);
+ 
+ 	bus_addr = i2c_mii_phy_addr(phy_id);
+@@ -389,6 +394,8 @@ static int i2c_mii_write_rollball(struct mii_bus *bus, int phy_id, int devad,
+ 	int bus_addr, ret;
+ 	u8 buf[6];
+ 
++	msleep(25);
++
+ 	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d val=%04x\n", __func__, phy_id, devad, reg, val);
+ 
+ 	bus_addr = i2c_mii_phy_addr(phy_id);
+-- 
+2.47.3
+

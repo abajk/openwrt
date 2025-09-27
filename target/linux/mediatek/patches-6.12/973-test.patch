@@ -1,0 +1,26 @@
+From 81c1a27383032adb30efdf166f491a57858fedaf Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 31 Aug 2025 22:38:00 +0200
+Subject: [PATCH 2/3] test
+
+---
+ drivers/net/phy/sfp.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+index 43ea3935c50c..cd05755eeca4 100644
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -399,7 +399,8 @@ static void sfp_fixup_rollball_wait4s(struct sfp *sfp)
+ 	 * them does not return 0xffff for PHY ID registers in all MMDs for the
+ 	 * while initializing. They need a 4 second wait before accessing PHY.
+ 	 */
+-	sfp->module_t_wait = msecs_to_jiffies(4000);
++	sfp->module_t_start_up = msecs_to_jiffies(60000);
++	sfp->module_t_wait = msecs_to_jiffies(60000);
+ }
+ 
+ static void sfp_fixup_fs_10gt(struct sfp *sfp)
+-- 
+2.47.3
+
