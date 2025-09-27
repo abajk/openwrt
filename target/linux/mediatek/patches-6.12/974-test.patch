@@ -1,14 +1,14 @@
-From 0b3b6e98dc51e2003c0414fcf9af576c5c778802 Mon Sep 17 00:00:00 2001
+From 706cf829da0475776633d828c63f0195b9d1b9c4 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 31 Aug 2025 23:13:08 +0200
-Subject: [PATCH 3/3] test
+Subject: [PATCH] test
 
 ---
- drivers/net/mdio/mdio-i2c.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/mdio/mdio-i2c.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/mdio/mdio-i2c.c b/drivers/net/mdio/mdio-i2c.c
-index cd6ea6b424e1..c67a54f8ac61 100644
+index 53e96bfab542..8b14902de6a6 100644
 --- a/drivers/net/mdio/mdio-i2c.c
 +++ b/drivers/net/mdio/mdio-i2c.c
 @@ -307,18 +307,21 @@ static int i2c_rollball_mii_poll(struct mii_bus *bus, int bus_addr, u8 *buf,
@@ -36,24 +36,26 @@ index cd6ea6b424e1..c67a54f8ac61 100644
  	dev_dbg(&bus->dev, "poll timed out\n");
  
  	return -ETIMEDOUT;
-@@ -354,6 +357,8 @@ static int i2c_mii_read_rollball(struct mii_bus *bus, int phy_id, int devad,
+@@ -354,6 +357,10 @@ static int i2c_mii_read_rollball(struct mii_bus *bus, int phy_id, int devad,
  	int bus_addr, ret;
  	u16 val;
  
 +	msleep(25);
 +
- 	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d\n", __func__, phy_id, devad, reg);
- 
++	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d\n", __func__, phy_id, devad, reg);
++
  	bus_addr = i2c_mii_phy_addr(phy_id);
-@@ -389,6 +394,8 @@ static int i2c_mii_write_rollball(struct mii_bus *bus, int phy_id, int devad,
+ 	if (bus_addr != ROLLBALL_PHY_I2C_ADDR)
+ 		return 0xffff;
+@@ -385,6 +392,8 @@ static int i2c_mii_write_rollball(struct mii_bus *bus, int phy_id, int devad,
  	int bus_addr, ret;
  	u8 buf[6];
  
 +	msleep(25);
 +
- 	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d val=%04x\n", __func__, phy_id, devad, reg, val);
- 
  	bus_addr = i2c_mii_phy_addr(phy_id);
+ 	if (bus_addr != ROLLBALL_PHY_I2C_ADDR)
+ 		return 0;
 -- 
 2.47.3
 
