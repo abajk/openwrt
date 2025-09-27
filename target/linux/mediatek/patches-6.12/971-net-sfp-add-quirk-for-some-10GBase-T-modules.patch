@@ -1,0 +1,25 @@
+From c2e1cf7e8ba927c4f7b8d1e9a11af7c2ffe8fed7 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 31 Aug 2025 19:59:19 +0200
+Subject: [PATCH] net: sfp: add quirk for some 10GBase-T modules
+
+---
+ drivers/net/phy/sfp.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+index 4cd1d6c51dc2..43ea3935c50c 100644
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -538,6 +538,8 @@ static const struct sfp_quirk sfp_quirks[] = {
+ 	SFP_QUIRK_F("OEM", "SFP-GE-T", sfp_fixup_ignore_tx_fault),
+ 
+ 	SFP_QUIRK_F("OEM", "SFP-10G-T", sfp_fixup_rollball_cc),
++	SFP_QUIRK_F("OEM", "SFP+-T-R30", sfp_fixup_rollball_cc),
++	SFP_QUIRK_F("", "", sfp_fixup_rollball_cc),
+ 	SFP_QUIRK_M("OEM", "SFP-2.5G-T", sfp_quirk_oem_2_5g),
+ 	SFP_QUIRK_M("OEM", "SFP-2.5G-BX10-D", sfp_quirk_2500basex),
+ 	SFP_QUIRK_M("OEM", "SFP-2.5G-BX10-U", sfp_quirk_2500basex),
+-- 
+2.47.3
+

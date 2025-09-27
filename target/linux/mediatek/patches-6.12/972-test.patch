@@ -1,0 +1,32 @@
+From 14bd8c6118a6f4184c59f2b8dd561a27d6dcedd2 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 5 Jul 2025 23:55:29 +0200
+Subject: [PATCH] test
+
+---
+ drivers/net/mdio/mdio-i2c.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/mdio/mdio-i2c.c b/drivers/net/mdio/mdio-i2c.c
+index 53e96bfab542..aecd38b0705f 100644
+--- a/drivers/net/mdio/mdio-i2c.c
++++ b/drivers/net/mdio/mdio-i2c.c
+@@ -38,6 +38,7 @@ static int i2c_mii_read_default_c45(struct mii_bus *bus, int phy_id, int devad,
+ 	u8 addr[3], data[2], *p;
+ 	int bus_addr, ret;
+ 
++	printk(KERN_ERR "%s:1 read: phy_id=%d, devadd=%d, reg=%d\n", __func__, phy_id, devad, reg);
+ 	if (!i2c_mii_valid_phy_id(phy_id))
+ 		return 0xffff;
+ 
+@@ -62,6 +63,7 @@ static int i2c_mii_read_default_c45(struct mii_bus *bus, int phy_id, int devad,
+ 	if (ret != ARRAY_SIZE(msgs))
+ 		return 0xffff;
+ 
++	printk(KERN_ERR "%s:2 data=%08x,%08x\n", __func__, data[0], data[1]);
+ 	return data[0] << 8 | data[1];
+ }
+ 
+-- 
+2.39.5
+

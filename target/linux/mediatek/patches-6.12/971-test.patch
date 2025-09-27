@@ -1,0 +1,46 @@
+From f7b4a7c758964a2f979d862e70929d5205c3c37c Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 31 Aug 2025 23:13:08 +0200
+Subject: [PATCH] test
+
+---
+ drivers/net/mdio/mdio-i2c.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/mdio/mdio-i2c.c b/drivers/net/mdio/mdio-i2c.c
+index ed20352a589a..013f1b57389e 100644
+--- a/drivers/net/mdio/mdio-i2c.c
++++ b/drivers/net/mdio/mdio-i2c.c
+@@ -318,9 +318,9 @@ static int i2c_rollball_mii_poll(struct mii_bus *bus, int bus_addr, u8 *buf,
+ 	/* By experiment it takes up to 70 ms to access a register for these
+ 	 * SFPs. Sleep 20ms between iterations and try 10 times.
+ 	 */
+-	i = 10;
++	i = 200;
+ 	do {
+-		msleep(20);
++		msleep(1);
+ 
+ 		ret = i2c_transfer_rollball(i2c, msgs, ARRAY_SIZE(msgs));
+ 		if (ret)
+@@ -365,6 +365,8 @@ static int i2c_mii_read_rollball(struct mii_bus *bus, int phy_id, int devad,
+ 	int bus_addr, ret;
+ 	u16 val;
+ 
++	msleep(25);
++
+ 	bus_addr = i2c_mii_phy_addr(phy_id);
+ 	if (bus_addr != ROLLBALL_PHY_I2C_ADDR)
+ 		return 0xffff;
+@@ -396,6 +398,8 @@ static int i2c_mii_write_rollball(struct mii_bus *bus, int phy_id, int devad,
+ 	int bus_addr, ret;
+ 	u8 buf[6];
+ 
++	msleep(25);
++
+ 	bus_addr = i2c_mii_phy_addr(phy_id);
+ 	if (bus_addr != ROLLBALL_PHY_I2C_ADDR)
+ 		return 0;
+-- 
+2.47.3
+
