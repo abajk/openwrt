@@ -317,7 +317,7 @@ index d9455b8a3..49f971703 100644
  }
  
  static int rtlgen_resume(struct phy_device *phydev)
-@@ -1688,14 +1822,402 @@ static irqreturn_t rtl8221b_handle_interrupt(struct phy_device *phydev)
+@@ -1688,14 +1822,407 @@ static irqreturn_t rtl8221b_handle_interrupt(struct phy_device *phydev)
  	return IRQ_HANDLED;
  }
  
@@ -394,6 +394,11 @@ index d9455b8a3..49f971703 100644
 +		phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, RTL8261N_SERDES_GLOBAL_CFG, RTL8261N_SERDES_GLOBAL_CFG_HSO_INV);
 +	if (priv->pnswap_rx)
 +		phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, RTL8261N_SERDES_GLOBAL_CFG, RTL8261N_SERDES_GLOBAL_CFG_HSI_INV);
++
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0x19, 0x154);
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0x1A, 0x20C);
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0x1D, 0x1);
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, 0x1E, 0x20C);
 +
 +	return ret;
 +}

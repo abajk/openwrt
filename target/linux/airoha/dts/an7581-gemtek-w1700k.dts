@@ -305,12 +305,18 @@
 		phy5: ethernet-phy@5 {
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <5>;
+			realtek,pnswap-tx;
+			reset-assert-us = <40000>;
+			reset-deassert-us = <150000>;
 			reset-gpios = <&en7581_pinctrl 46 GPIO_ACTIVE_LOW>;
 		};
 
 		phy8: ethernet-phy@8 {
 			compatible = "ethernet-phy-ieee802.3-c45";
 			reg = <8>;
+			realtek,pnswap-tx;
+			reset-assert-us = <40000>;
+			reset-deassert-us = <150000>;
 			reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
 		};
 	};
