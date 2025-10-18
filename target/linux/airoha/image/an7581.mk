@@ -36,8 +36,7 @@ define Device/gemtek_w1700k
   DEVICE_ALT2_MODEL := W1700K
   DEVICE_DTS := an7581-gemtek-w1700k
   DEVICE_DTS_DIR := ../dts
-  DEVICE_PACKAGES := airoha-en7581-npu-firmware \
-		    kmod-i2c-an7581 kmod-hwmon-nct7802 \
+  DEVICE_PACKAGES := kmod-i2c-an7581 kmod-hwmon-nct7802 \
 		    kmod-mt7996-firmware kmod-phy-rtl8261n
   KERNEL_LOADADDR := 0x80088000
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
