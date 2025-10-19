@@ -1,4 +1,4 @@
-From 7107d98965a32f012fc996ff144bce71cfa8ee73 Mon Sep 17 00:00:00 2001
+From 0df376c2d1a7bcb1949f894794d9caf0edbff8c4 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 19 Oct 2025 11:22:57 +0200
 Subject: [PATCH] wifi: mt76: add tx checksum offload for mt7996
@@ -8,7 +8,8 @@ Supports IPv4 and IPv6 TCP + UDP.
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
  mt7996/init.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mt7996/mac.c  | 6 ++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/mt7996/init.c b/mt7996/init.c
 index a9347d93..865c79df 100644
@@ -24,6 +25,30 @@ index a9347d93..865c79df 100644
  	if (mtk_wed_device_active(wed))
  		hw->netdev_features |= NETIF_F_HW_TC;
  
+diff --git a/mt7996/mac.c b/mt7996/mac.c
+index 384b66b3..0149c451 100644
+--- a/mt7996/mac.c
++++ b/mt7996/mac.c
+@@ -760,6 +760,9 @@ mt7996_mac_write_txwi_8023(struct mt7996_dev *dev, __le32 *txwi,
+ 		wmm = sta->wme;
+ 	}
+ 
++	val = FIELD_PREP(MT_TXD0_ETH_TYPE_OFFSET, 10);
++	txwi[0] |= cpu_to_le32(val);
++
+ 	val = FIELD_PREP(MT_TXD1_HDR_FORMAT, MT_HDR_FORMAT_802_3) |
+ 	      FIELD_PREP(MT_TXD1_TID, tid);
+ 
+@@ -775,6 +778,9 @@ mt7996_mac_write_txwi_8023(struct mt7996_dev *dev, __le32 *txwi,
+ 	val = FIELD_PREP(MT_TXD2_FRAME_TYPE, fc_type) |
+ 	      FIELD_PREP(MT_TXD2_SUB_TYPE, fc_stype);
+ 
++	if (skb->ip_summed == CHECKSUM_PARTIAL)
++		val |= MT_TXD7_IP_SUM | MT_TXD7_UDP_TCP_SUM;
++
+ 	txwi[2] |= cpu_to_le32(val);
+ 
+ 	if (wcid->amsdu)
 -- 
 2.47.3
 
