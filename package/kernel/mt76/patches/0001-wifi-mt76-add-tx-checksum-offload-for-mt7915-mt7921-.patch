@@ -1,0 +1,78 @@
+From ca51279e56fce6e217a2b5d9b226d72f67411523 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 29 Sep 2024 13:57:22 +0200
+Subject: [PATCH] wifi: mt76: add tx checksum offload for mt7915, mt7921,
+ mt7981 and mt7986
+
+Supports IPv4 and IPv6 TCP + UDP
+
+In various tests between MT7986 and Intel BE200, I observed a performance
+boost ranging from 2 to 12%, with an average of 5.5%.
+
+I did the tests on the MT7915, MT7981, MT7986, and MT7921 variants. The
+MT7922, MT7925, and MT799x are untouched for now and still have
+checksumming disabled.
+
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
+[rebased and resolved conflicts]
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ mt76_connac_mac.c | 5 +++++
+ mt7915/init.c     | 3 ++-
+ mt792x_core.c     | 3 +++
+ 3 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/mt76_connac_mac.c b/mt76_connac_mac.c
+index 7af6a578..8fb7a371 100644
+--- a/mt76_connac_mac.c
++++ b/mt76_connac_mac.c
+@@ -372,6 +372,9 @@ mt76_connac2_mac_write_txwi_8023(__le32 *txwi, struct sk_buff *skb,
+ 		wmm = sta->wme;
+ 	}
+ 
++	val = FIELD_PREP(MT_TXD0_ETH_TYPE_OFFSET, 10);
++	txwi[0] |= cpu_to_le32(val);
++
+ 	val = FIELD_PREP(MT_TXD1_HDR_FORMAT, MT_HDR_FORMAT_802_3) |
+ 	      FIELD_PREP(MT_TXD1_TID, tid);
+ 
+@@ -391,6 +394,8 @@ mt76_connac2_mac_write_txwi_8023(__le32 *txwi, struct sk_buff *skb,
+ 
+ 	val = FIELD_PREP(MT_TXD7_TYPE, fc_type) |
+ 	      FIELD_PREP(MT_TXD7_SUB_TYPE, fc_stype);
++	if (skb->ip_summed == CHECKSUM_PARTIAL)
++		val |= MT_TXD7_IP_SUM | MT_TXD7_UDP_TCP_SUM;
+ 
+ 	txwi[7] |= cpu_to_le32(val);
+ }
+diff --git a/mt7915/init.c b/mt7915/init.c
+index 2da6ea91..5afb37ad 100644
+--- a/mt7915/init.c
++++ b/mt7915/init.c
+@@ -366,7 +366,8 @@ mt7915_init_wiphy(struct mt7915_phy *phy)
+ 	hw->queues = 4;
+ 	hw->max_rx_aggregation_subframes = IEEE80211_MAX_AMPDU_BUF_HE;
+ 	hw->max_tx_aggregation_subframes = IEEE80211_MAX_AMPDU_BUF_HE;
+-	hw->netdev_features = NETIF_F_RXCSUM;
++	hw->netdev_features = NETIF_F_RXCSUM |
++			      NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+ 
+ 	if (mtk_wed_device_active(&mdev->mmio.wed))
+ 		hw->netdev_features |= NETIF_F_HW_TC;
+diff --git a/mt792x_core.c b/mt792x_core.c
+index 8ee592a8..b8be9411 100644
+--- a/mt792x_core.c
++++ b/mt792x_core.c
+@@ -631,6 +631,9 @@ int mt792x_init_wiphy(struct ieee80211_hw *hw)
+ 	}
+ 	hw->netdev_features = NETIF_F_RXCSUM;
+ 
++	if (is_mt7921(&dev->mt76))
++		hw->netdev_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
++
+ 	hw->radiotap_timestamp.units_pos =
+ 		IEEE80211_RADIOTAP_TIMESTAMP_UNIT_US;
+ 
+-- 
+2.47.3
+

@@ -1,0 +1,212 @@
+From ea0c8130e4501b355e77fef4bd9c7040a2349add Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Fri, 14 Mar 2025 20:22:30 +0100
+Subject: [PATCH] iwinfo: export HE and EHT operation in scan results
+
+Export WiFi 6E (HE) and WiFi 7 (EHT) operation data in scan results.
+These additional data can be useful to check wifi channel utilization
+by nearby stations.
+
+Example
+Cell 22 - Address: xx:xx:xx:xx:xx:xx
+          ESSID: "OpenWrt"
+          Mode: Master  Frequency: 5.955 GHz  Band: 6 GHz  Channel: 1
+          Signal: -21 dBm  Quality: 70/70
+          Encryption: WPA3 SAE (CCMP)
+          HE Operation:
+                    Center Frequency 1: 7
+                    Center Frequency 2: 15
+                    Channel Width: 160 MHz
+          EHT Operation:
+                    Center Frequency 1: 15
+                    Center Frequency 2: 31
+                    Channel Width: 320 MHz
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ include/iwinfo.h |  8 ++++++
+ iwinfo_cli.c     | 33 +++++++++++++++++++++++++
+ iwinfo_lib.c     |  8 ++++++
+ iwinfo_nl80211.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 112 insertions(+)
+
+diff --git a/include/iwinfo.h b/include/iwinfo.h
+index 2a841be..2625fbd 100644
+--- a/include/iwinfo.h
++++ b/include/iwinfo.h
+@@ -330,6 +330,12 @@ extern const uint16_t ht_chan_width[2];
+    2 = 160 MHz
+    3 = 80+80 MHz */
+ extern const uint16_t vht_chan_width[4];
++/* 0 = 20 MHz
++   1 = 40 MHz
++   2 = 80 MHz
++   3 = 80+80 or 160 MHz
++   4 = 160+160 or 320 MHz */
++extern const uint16_t eht_chan_width[5];
+ 
+ struct iwinfo_scanlist_entry {
+ 	uint8_t mac[6];
+@@ -344,6 +350,8 @@ struct iwinfo_scanlist_entry {
+ 	struct iwinfo_crypto_entry crypto;
+ 	struct iwinfo_scanlist_ht_chan_entry ht_chan_info;
+ 	struct iwinfo_scanlist_vht_chan_entry vht_chan_info;
++	struct iwinfo_scanlist_vht_chan_entry he_chan_info;
++	struct iwinfo_scanlist_vht_chan_entry eht_chan_info;
+ };
+ 
+ struct iwinfo_country_entry {
+diff --git a/iwinfo_cli.c b/iwinfo_cli.c
+index 0966d1b..84a9833 100644
+--- a/iwinfo_cli.c
++++ b/iwinfo_cli.c
+@@ -362,6 +362,19 @@ static const char* format_chan_width(bool vht, uint8_t width)
+ 	return "unknown";
+ }
+ 
++static const char* format_6ghz_chan_width(uint8_t width)
++{
++	if (width < ARRAY_SIZE(eht_chan_width))
++		switch (eht_chan_width[width]) {
++			case 20: return "20 MHz";
++			case 40: return "40 MHz";
++			case 80: return "80 MHz";
++			case 160: return "160 MHz";
++			case 320: return "320 MHz";
++		}
++
++	return "unknown";
++}
+ 
+ static const char * print_type(const struct iwinfo_ops *iw, const char *ifname)
+ {
+@@ -720,6 +733,26 @@ static void print_scanlist(const struct iwinfo_ops *iw, const char *ifname)
+ 				format_chan_width(true, e->vht_chan_info.chan_width));
+ 		}
+ 
++		if (e->he_chan_info.center_chan_1) {
++			printf("          HE Operation:\n");
++			printf("                    Center Frequency 1: %d\n",
++				 e->he_chan_info.center_chan_1);
++			printf("                    Center Frequency 2: %d\n",
++				 e->he_chan_info.center_chan_2);
++			printf("                    Channel Width: %s\n",
++				format_6ghz_chan_width(e->he_chan_info.chan_width));
++		}
++
++		if (e->eht_chan_info.center_chan_1) {
++			printf("          EHT Operation:\n");
++			printf("                    Center Frequency 1: %d\n",
++				 e->eht_chan_info.center_chan_1);
++			printf("                    Center Frequency 2: %d\n",
++				 e->eht_chan_info.center_chan_2);
++			printf("                    Channel Width: %s\n",
++				format_6ghz_chan_width(e->eht_chan_info.chan_width));
++		}
++
+ 		printf("\n");
+ 	}
+ }
+diff --git a/iwinfo_lib.c b/iwinfo_lib.c
+index f9f6569..7b1d5ef 100644
+--- a/iwinfo_lib.c
++++ b/iwinfo_lib.c
+@@ -133,6 +133,14 @@ const uint16_t vht_chan_width[4] = {
+ 	8080, /* 80+80 MHz */
+ };
+ 
++const uint16_t eht_chan_width[5] = {
++	20, /* 20 MHz */
++	40, /* 40 MHz */
++	80, /* 80 MHz */
++	160, /* 80+80 or 160 MHz */
++	320, /* 160+160 or 320 MHz */
++};
++
+ /*
+  * ISO3166 country labels
+  */
+diff --git a/iwinfo_nl80211.c b/iwinfo_nl80211.c
+index dc4ff93..555d1e9 100644
+--- a/iwinfo_nl80211.c
++++ b/iwinfo_nl80211.c
+@@ -2555,6 +2555,66 @@ struct nl80211_scanlist {
+ };
+ 
+ 
++static void nl80211_get_scanlist_he_operation(unsigned char len,
++		unsigned char *ie, struct iwinfo_scanlist_entry *e)
++{
++	uint8_t offset = 6;
++
++	/* 6 GHz Operation Info not present */
++	if (!(ie[2] & 0x02))
++		return;
++
++	/* VHT Operation Info present */
++	if (ie[1] & 0x40)
++		offset += 3;
++
++	/* Co Hosted BSS present */
++	if (ie[1] & 0x80)
++		offset += 1;
++
++	if (len - offset < 5)
++		return;
++
++	e->he_chan_info.chan_width = ie[offset + 1] & 0x03;
++	e->he_chan_info.center_chan_1 = ie[offset + 2];
++	e->he_chan_info.center_chan_2 = ie[offset + 3];
++}
++
++
++static void nl80211_get_scanlist_eht_operation(unsigned char len,
++		unsigned char *ie, struct iwinfo_scanlist_entry *e)
++{
++	/* EHT Operation Info not present */
++	if (!(ie[0] & 0x01))
++		return;
++
++	if (len < 8)
++		return;
++
++	e->eht_chan_info.chan_width = ie[5] & 0x07;
++	e->eht_chan_info.center_chan_1 = ie[6];
++	e->eht_chan_info.center_chan_2 = ie[7];
++}
++
++
++static void nl80211_get_scanlist_extension(unsigned char len,
++		unsigned char *ie, struct iwinfo_scanlist_entry *e)
++{
++	if (len < 1)
++		return;
++
++	switch (ie[0])
++	{
++	case 36: /* HE Operation */
++		nl80211_get_scanlist_he_operation(len - 1, ie + 1, e);
++		break;
++	case 106: /* EHT Operation */
++		nl80211_get_scanlist_eht_operation(len - 1, ie + 1, e);
++		break;
++	}
++}
++
++
+ static void nl80211_get_scanlist_ie(struct nlattr **bss,
+                                     struct iwinfo_scanlist_entry *e)
+ {
+@@ -2600,6 +2660,9 @@ static void nl80211_get_scanlist_ie(struct nlattr **bss,
+ 				e->vht_chan_info.center_chan_2 = ie[4];
+ 			}
+ 			break;
++		case 255: /* Extension Tag*/
++			nl80211_get_scanlist_extension(ie[1], ie + 2, e);
++			break;
+ 		}
+ 
+ 		ielen -= ie[1] + 2;
+-- 
+2.47.3
+

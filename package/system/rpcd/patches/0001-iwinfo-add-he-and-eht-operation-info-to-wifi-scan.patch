@@ -1,0 +1,43 @@
+From de61c3ef6849a146800ddb817be89a438e3f53a9 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 15 Mar 2025 17:03:33 +0100
+Subject: [PATCH] iwinfo: add he and eht operation info to wifi scan
+
+Iwinfo exports he and eht operation info useful to get channel info of
+nearby stations. Add these new info to ubus output.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ iwinfo.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/iwinfo.c b/iwinfo.c
+index ff0f38b..2a223ed 100644
+--- a/iwinfo.c
++++ b/iwinfo.c
+@@ -437,6 +437,22 @@ rpc_iwinfo_scan(struct ubus_context *ctx, struct ubus_object *obj,
+ 				blobmsg_close_table(&buf, t);
+ 			}
+ 
++			if (e->he_chan_info.center_chan_1) {
++				t = blobmsg_open_table(&buf, "he_operation");
++				blobmsg_add_u32(&buf, "channel_width", eht_chan_width[e->he_chan_info.chan_width]);
++				blobmsg_add_u32(&buf, "center_freq_1", e->he_chan_info.center_chan_1);
++				blobmsg_add_u32(&buf, "center_freq_2", e->he_chan_info.center_chan_2);
++				blobmsg_close_table(&buf, t);
++			}
++
++			if (e->eht_chan_info.center_chan_1) {
++				t = blobmsg_open_table(&buf, "eht_operation");
++				blobmsg_add_u32(&buf, "channel_width", eht_chan_width[e->eht_chan_info.chan_width]);
++				blobmsg_add_u32(&buf, "center_freq_1", e->eht_chan_info.center_chan_1);
++				blobmsg_add_u32(&buf, "center_freq_2", e->eht_chan_info.center_chan_2);
++				blobmsg_close_table(&buf, t);
++			}
++
+ 			rpc_iwinfo_add_encryption("encryption", &e->crypto);
+ 
+ 			blobmsg_close_table(&buf, d);
+-- 
+2.47.3
+
