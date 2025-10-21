@@ -34,7 +34,7 @@ index 384b66b3..0149c451 100644
  	}
  
 +	val = FIELD_PREP(MT_TXD0_ETH_TYPE_OFFSET, 10);
-+	txwi[0] |= cpu_to_le32(val);
++	txwi[0] |= cpu_to_le32(val)
 +
  	val = FIELD_PREP(MT_TXD1_HDR_FORMAT, MT_HDR_FORMAT_802_3) |
  	      FIELD_PREP(MT_TXD1_TID, tid);
