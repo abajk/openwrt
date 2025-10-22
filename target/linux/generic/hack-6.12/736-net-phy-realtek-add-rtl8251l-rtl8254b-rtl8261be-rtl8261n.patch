@@ -198,7 +198,7 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
  static int rtlgen_resume(struct phy_device *phydev)
  {
  	int ret = genphy_resume(phydev);
-@@ -1705,6 +1822,394 @@ static irqreturn_t rtl8221b_handle_inter
+@@ -1705,6 +1822,398 @@ static irqreturn_t rtl8221b_handle_inter
  	return IRQ_HANDLED;
  }
  
@@ -227,6 +227,10 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
 +	int ret;
 +
 +	ret = rtl826x_probe(phydev);
++	if (ret < 0)
++		return ret;
++
++	ret = rtl822x_probe(phydev);
 +	if (ret < 0)
 +		return ret;
 +
