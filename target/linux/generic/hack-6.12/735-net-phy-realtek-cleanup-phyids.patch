@@ -22,7 +22,7 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
 -#define RTL_8211FVD_PHYID			0x001cc878
 -#define RTL_8221B				0x001cc840
 -#define RTL_8221B_VB_CG				0x001cc849
--#define RTL_8221B_VN_CG				0x001cc84a
+-#define RTL_8221B_VM_CG				0x001cc84a
 -#define RTL_8251B				0x001cc862
 -#define RTL_8261C				0x001cc890
 +#define PHYID_RTL_GENERIC			0x001cc800
@@ -33,7 +33,7 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
 +#define PHYID_RTL8125BP				0x001cc841
 +#define PHYID_RTL8226B				0x001cc848
 +#define PHYID_RTL8221B_VB			0x001cc849
-+#define PHYID_RTL8221B_VN			0x001cc84a
++#define PHYID_RTL8221B_VM			0x001cc84a
 +#define PHYID_RTL8251B				0x001cc862
 +#define PHYID_RTL8211FVD			0x001cc878
 +#define PHYID_RTL8208				0x001cc880
@@ -109,18 +109,18 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
 +	return rtlgen_is_c45_match(phydev, PHYID_RTL8221B_VB, true);
  }
  
- static int rtl8221b_vn_cg_c22_match_phy_device(struct phy_device *phydev,
+ static int rtl8221b_vm_cg_c22_match_phy_device(struct phy_device *phydev,
  					       const struct phy_driver *phydrv)
  {
--	return rtlgen_is_c45_match(phydev, RTL_8221B_VN_CG, false);
-+	return rtlgen_is_c45_match(phydev, PHYID_RTL8221B_VN, false);
+-	return rtlgen_is_c45_match(phydev, RTL_8221B_VM_CG, false);
++	return rtlgen_is_c45_match(phydev, PHYID_RTL8221B_VM, false);
  }
  
- static int rtl8221b_vn_cg_c45_match_phy_device(struct phy_device *phydev,
+ static int rtl8221b_vm_cg_c45_match_phy_device(struct phy_device *phydev,
  					       const struct phy_driver *phydrv)
  {
--	return rtlgen_is_c45_match(phydev, RTL_8221B_VN_CG, true);
-+	return rtlgen_is_c45_match(phydev, PHYID_RTL8221B_VN, true);
+-	return rtlgen_is_c45_match(phydev, RTL_8221B_VM_CG, true);
++	return rtlgen_is_c45_match(phydev, PHYID_RTL8221B_VM, true);
  }
  
  static int rtl_internal_nbaset_match_phy_device(struct phy_device *phydev,
