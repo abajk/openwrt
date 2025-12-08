@@ -214,7 +214,7 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
  static int rtlgen_resume(struct phy_device *phydev)
  {
  	int ret = genphy_resume(phydev);
-@@ -2079,6 +2212,416 @@ static irqreturn_t rtl8221b_handle_inter
+@@ -2079,6 +2212,405 @@ static irqreturn_t rtl8221b_handle_inter
  	return IRQ_HANDLED;
  }
  
@@ -414,59 +414,48 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
 +{
 +	int ret = 0;
 +
++	printk(KERN_ERR "%s:1\n", __func__);
 +	/* Disable all IMR*/
-+	ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE1, GENMASK(15, 0), 0);
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xE1, 0);
 +	if (ret < 0)
 +		return ret;
-+	ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE3, GENMASK(15, 0), 0);
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xE3, 0);
 +	if (ret < 0)
 +		return ret;
 +
-+	/* source */
-+	ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE4, GENMASK(15, 0), 0x1);
++	/* Set SDS interrupt source to INT_PHY0 */
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xE4, 0x1);
 +	if (ret < 0)
 +		return ret;
-+	ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE0, GENMASK(15, 0), 0x2F);
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, 0xE0, 0x2F);
 +	if (ret < 0)
 +		return ret;
 +
 +	/* init common link change & WOL*/
-+	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INER, RTL826X_VND2_INER_LINK_STATUS | RTL826X_VND2_INER_PME);
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INER, RTL826X_VND2_INER_LINK_STATUS);
 +	if (ret < 0)
 +		return ret;
 +
 +	/* clear status */
 +	phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0x2DC, GENMASK(15, 0), 0xFF);
 +
-+	return phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE1, GENMASK(0, 0),
++	printk(KERN_ERR "%s:2\n", __func__);
++	return phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0xE1, BIT(0),
 +			      phydev->interrupts == PHY_INTERRUPT_ENABLED);
 +}
 +
 +static irqreturn_t rtl826x_handle_intr(struct phy_device *phydev)
 +{
-+	u32 data;
++	int err;
 +
-+	data = phy_read_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INSR);
-+	if (data < 0)
++	err = phy_read_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INSR);
++	printk(KERN_ERR "%s:1 INSR=%d\n", __func__, err);
++	if (err < 0) {
++		phy_error(phydev);
 +		return IRQ_NONE;
-+
-+	if (phy_modify_mmd(phydev, MDIO_MMD_VEND1, 0x2DC, GENMASK(15, 0), 0xFF) < 0)
-+		return IRQ_NONE;
-+
-+	if (data & RTL826X_VND2_INER_LINK_STATUS) {
-+		phydev_dbg(phydev, "RTK_PHY_INTR_LINK_CHANGE\n");
-+		phy_mac_interrupt(phydev);
 +	}
 +
-+	if (data & RTL826X_VND2_INER_PME) {
-+		phydev_dbg(phydev, "RTK_PHY_INTR_WOL\n");
-+
-+		if (phy_modify_mmd(phydev, MDIO_MMD_VEND2, 0xD8A2, BIT(15), 0) < 0)
-+			return IRQ_NONE;
-+
-+		if (phy_modify_mmd(phydev, MDIO_MMD_VEND2, 0xD8A2, BIT(15), 1 << 15) < 0)
-+			return IRQ_NONE;
-+	}
++	phy_trigger_machine(phydev);
 +
 +	return IRQ_HANDLED;
 +}
@@ -631,7 +620,7 @@ Signed-off-by: Balázs Triszka <info@balika011.hu>
  static struct phy_driver realtek_drvs[] = {
  	{
  		PHY_ID_MATCH_EXACT(PHYID_RTL8201CP),
-@@ -2373,6 +2916,111 @@ static struct phy_driver realtek_drvs[]
+@@ -2373,6 +2917,111 @@ static struct phy_driver realtek_drvs[]
  		.resume		= genphy_resume,
  		.read_mmd	= genphy_read_mmd_unsupported,
  		.write_mmd	= genphy_write_mmd_unsupported,
