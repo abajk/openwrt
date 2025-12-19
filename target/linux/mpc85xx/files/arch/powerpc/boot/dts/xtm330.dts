@@ -277,17 +277,6 @@
 						nvmem-cells = <&mac_addr_0 6>;
 						nvmem-cell-names = "mac-address";
 					};
-
-					port@5 {
-						reg = <5>;
-						phy-mode = "rgmii-id";
-						ethernet = <&enet0>;
-
-						fixed-link {
-							speed = <1000>;
-							full-duplex;
-						};
-					};
 				};
 			};
 		};
