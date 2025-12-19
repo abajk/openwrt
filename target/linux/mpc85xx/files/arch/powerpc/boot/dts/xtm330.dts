@@ -208,15 +208,22 @@
 						nvmem-cell-names = "mac-address";
 					};
 
-					port@4 {
+					sw0p4: port@4 {
 						reg = <4>;
-						label = "internal1";
+						link = <&sw1p0>;
+						phy-mode = "internal";
+
+						fixed-link {
+							speed = <1000>;
+							full-duplex;
+						};
 					};
 
 					port@5 {
 						reg = <5>;
 						phy-mode = "rgmii-id";
 						ethernet = <&enet2>;
+
 						fixed-link {
 							speed = <1000>;
 							full-duplex;
@@ -230,15 +237,21 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 				reg = <0x11>;
-				dsa,member = <1 0>;
+				dsa,member = <0 1>;
 
 				ports {
 					#address-cells = <1>;
 					#size-cells = <0>;
 
-					port@0 {
+					sw1p0: port@0 {
 						reg = <0>;
-						label = "internal2";
+						link = <&sw0p4>;
+						phy-mode = "internal";
+
+						fixed-link {
+							speed = <1000>;
+							full-duplex;
+						};
 					};
 
 					port@1 {
@@ -269,6 +282,7 @@
 						reg = <5>;
 						phy-mode = "rgmii-id";
 						ethernet = <&enet0>;
+
 						fixed-link {
 							speed = <1000>;
 							full-duplex;
