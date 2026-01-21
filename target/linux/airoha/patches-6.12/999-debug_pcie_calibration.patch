@@ -1,0 +1,58 @@
+diff --git a/drivers/phy/phy-airoha-pcie.c b/drivers/phy/phy-airoha-pcie.c
+index 56e9ade8a9fd..d30236099faf 100644
+--- a/drivers/phy/phy-airoha-pcie.c
++++ b/drivers/phy/phy-airoha-pcie.c
+@@ -106,6 +106,7 @@ airoha_phy_init_lane0_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 	u32 fl_out_target = gen == PCIE_PORT_GEN3 ? 41600 : 41941;
+ 	u32 lock_cyclecnt = gen == PCIE_PORT_GEN3 ? 26000 : 32767;
+ 	u32 pr_idac, val, cdr_pr_idac_tmp = 0;
++	u32 fl_out;
+ 	int i;
+ 
+ 	airoha_phy_pma0_set_bits(pcie_phy,
+@@ -205,6 +206,7 @@ airoha_phy_init_lane0_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 		cdr_pr_idac_tmp = pr_idac;
+ 	}
+ 
++	fl_out = val;
+ 	airoha_phy_pma0_update_field(pcie_phy,
+ 				     REG_PCIE_PMA_FORCE_DA_PXP_CDR_PR_IDAC,
+ 				     PCIE_FORCE_DA_PXP_CDR_PR_IDAC,
+@@ -227,6 +229,10 @@ airoha_phy_init_lane0_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 			break;
+ 	}
+ 
++	if (!(val & PCIE_RO_FBCK_LOCK))
++		pr_err("FAILED TO LOCK idac: %x fl_out: %d fl_out_target: %d\n",
++		       cdr_pr_idac_tmp, fl_out, fl_out_target);
++
+ 	/* turn off force mode and update band values */
+ 	airoha_phy_csr_2l_clear_bits(pcie_phy, REG_CSR_2L_CDR0_PR_INJ_MODE,
+ 				     CSR_2L_PXP_CDR0_INJ_FORCE_OFF);
+@@ -267,6 +273,7 @@ airoha_phy_init_lane1_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 	u32 fl_out_target = gen == PCIE_PORT_GEN3 ? 41600 : 41941;
+ 	u32 lock_cyclecnt = gen == PCIE_PORT_GEN3 ? 26000 : 32767;
+ 	u32 pr_idac, val, cdr_pr_idac_tmp = 0;
++	u32 fl_out;
+ 	int i;
+ 
+ 	airoha_phy_pma1_set_bits(pcie_phy,
+@@ -365,6 +372,7 @@ airoha_phy_init_lane1_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 		cdr_pr_idac_tmp = pr_idac;
+ 	}
+ 
++	fl_out = val;
+ 	airoha_phy_pma1_update_field(pcie_phy,
+ 				     REG_PCIE_PMA_FORCE_DA_PXP_CDR_PR_IDAC,
+ 				     PCIE_FORCE_DA_PXP_CDR_PR_IDAC,
+@@ -387,6 +395,10 @@ airoha_phy_init_lane1_rx_fw_pre_calib(struct airoha_pcie_phy *pcie_phy,
+ 			break;
+ 	}
+ 
++	if (!(val & PCIE_RO_FBCK_LOCK))
++		pr_err("FAILED TO LOCK idac: %x fl_out: %d fl_out_target: %d\n",
++		       cdr_pr_idac_tmp, fl_out, fl_out_target);
++
+ 	/* turn off force mode and update band values */
+ 	airoha_phy_csr_2l_clear_bits(pcie_phy, REG_CSR_2L_CDR1_PR_INJ_MODE,
+ 				     CSR_2L_PXP_CDR1_INJ_FORCE_OFF);
