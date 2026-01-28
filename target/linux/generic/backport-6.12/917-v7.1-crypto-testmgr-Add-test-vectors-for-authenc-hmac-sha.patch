@@ -34,7 +34,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  		.generic_driver = "authenc(hmac-sha384-lib,cbc(aes-generic))",
 --- a/crypto/testmgr.h
 +++ b/crypto/testmgr.h
-@@ -18514,6 +18514,241 @@ static const struct aead_testvec hmac_sh
+@@ -18634,6 +18634,241 @@ static const struct aead_testvec hmac_sh
  	},
  };
  

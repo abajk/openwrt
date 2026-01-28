@@ -34,7 +34,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  		.fips_allowed = 1,
 --- a/crypto/testmgr.h
 +++ b/crypto/testmgr.h
-@@ -19060,6 +19060,269 @@ static const struct aead_testvec hmac_sh
+@@ -19180,6 +19180,269 @@ static const struct aead_testvec hmac_sh
  	},
  };
  

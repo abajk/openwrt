@@ -34,7 +34,7 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
  		.suite = {
 --- a/crypto/testmgr.h
 +++ b/crypto/testmgr.h
-@@ -17490,6 +17490,291 @@ static const struct aead_testvec hmac_sh
+@@ -17610,6 +17610,291 @@ static const struct aead_testvec hmac_sh
  	},
  };
  

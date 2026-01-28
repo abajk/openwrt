@@ -33,7 +33,7 @@ Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
  		.test = alg_test_aead,
 --- a/crypto/testmgr.h
 +++ b/crypto/testmgr.h
-@@ -17133,6 +17133,261 @@ static const struct cipher_testvec aes_c
+@@ -17253,6 +17253,261 @@ static const struct cipher_testvec aes_c
  	},
  };
  
