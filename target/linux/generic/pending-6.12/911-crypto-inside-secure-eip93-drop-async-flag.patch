@@ -1,0 +1,29 @@
+From dbf03f154f5756c1225b9748aae73e7fa2a874d7 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Fri, 6 Mar 2026 22:59:03 +0100
+Subject: [PATCH] crypto: inside-secure/eip93 - drop async flag
+
+TODO: Description
+
+Fixes: 9739f5f93b78 ("crypto: eip93 - Add Inside Secure SafeXcel EIP-93 crypto engine support")
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/crypto/inside-secure/eip93/eip93-common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/eip93/eip93-common.c b/drivers/crypto/inside-secure/eip93/eip93-common.c
+index f4ad6beff15e..259714a4ee4d 100644
+--- a/drivers/crypto/inside-secure/eip93/eip93-common.c
++++ b/drivers/crypto/inside-secure/eip93/eip93-common.c
+@@ -731,7 +731,7 @@ int eip93_hmac_setkey(u32 ctx_flags, const u8 *key, unsigned int keylen,
+ 		return -EINVAL;
+ 	}
+ 
+-	ahash_tfm = crypto_alloc_ahash(alg_name, 0, CRYPTO_ALG_ASYNC);
++	ahash_tfm = crypto_alloc_ahash(alg_name, 0, 0);
+ 	if (IS_ERR(ahash_tfm))
+ 		return PTR_ERR(ahash_tfm);
+ 
+-- 
+2.47.3
+
