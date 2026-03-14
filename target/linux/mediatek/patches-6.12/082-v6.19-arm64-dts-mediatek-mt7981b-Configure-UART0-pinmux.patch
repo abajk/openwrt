@@ -1,0 +1,38 @@
+From 8bc650405f4476667973b10ec58152d37cd41a99 Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@collabora.com>
+Date: Sat, 1 Nov 2025 14:32:46 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981b: Configure UART0 pinmux
+
+Add explicit pinctrl configuration for UART0
+
+Signed-off-by: Sjoerd Simons <sjoerd@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -102,6 +102,8 @@
+ 			clocks = <&infracfg CLK_INFRA_UART0_SEL>,
+ 				 <&infracfg CLK_INFRA_UART0_CK>;
+ 			clock-names = "baud", "bus";
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -229,6 +231,13 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			#interrupt-cells = <2>;
++
++			uart0_pins: uart0-pins {
++				mux {
++					function = "uart";
++					groups = "uart0";
++				};
++			};
+ 		};
+ 
+ 		efuse@11f20000 {

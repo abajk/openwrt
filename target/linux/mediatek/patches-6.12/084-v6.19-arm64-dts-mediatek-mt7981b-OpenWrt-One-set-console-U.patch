@@ -1,0 +1,50 @@
+From 36712c5cf980980139bd8f7b84b1b6daec068857 Mon Sep 17 00:00:00 2001
+From: Bryan Hinton <bryan@bryanhinton.com>
+Date: Sun, 21 Sep 2025 22:58:10 -0500
+Subject: [PATCH] arm64: dts: mediatek: mt7981b: OpenWrt One: set console UART
+ to 115200
+
+Use the new uart0 label for the console and make the speed explicit by
+setting stdout-path = "serial0:115200n8" under /chosen. This keeps the
+DTS OS-agnostic: no bootargs or distribution-specific properties are
+added.
+
+Drop the 'current-speed' property from uart0 as it is not allowed by the
+mediatek UART binding. The baud is already provided via stdout-path.
+
+Verification: Boot-tested with mainline Image+DTB via U-Boot on OpenWrt
+One (MT7981B). Serial console active at 115200, DTB decompile
+confirms serial0 alias and stdout-path set correctly.
+
+Reported-by: kernel test robot <lkp@intel.com>
+Closes: https://lore.kernel.org/r/202509211032.0rJjPoYE-lkp@intel.com/
+Signed-off-by: Bryan Hinton <bryan@bryanhinton.com>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
++++ b/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
+@@ -8,8 +8,20 @@
+ 	compatible = "openwrt,one", "mediatek,mt7981b";
+ 	model = "OpenWrt One";
+ 
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
+ 	memory@40000000 {
+ 		reg = <0 0x40000000 0 0x40000000>;
+ 		device_type = "memory";
+ 	};
+ };
++
++&uart0 {
++	status = "okay";
++};
