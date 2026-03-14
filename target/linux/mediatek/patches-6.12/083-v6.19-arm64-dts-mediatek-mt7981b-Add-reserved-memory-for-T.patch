@@ -1,0 +1,35 @@
+From c6dcf3283044533ec425eb45af3627ec8834aebe Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@collabora.com>
+Date: Sat, 1 Nov 2025 14:32:47 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981b: Add reserved memory for TF-A
+
+Add memory range handled by ARM Trusted Firmware
+
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Signed-off-by: Sjoerd Simons <sjoerd@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -41,6 +41,18 @@
+ 		method = "smc";
+ 	};
+ 
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		/* 192 KiB reserved for ARM Trusted Firmware (BL31) */
++		secmon_reserved: secmon@43000000 {
++			reg = <0 0x43000000 0 0x30000>;
++			no-map;
++		};
++	};
++
+ 	soc {
+ 		compatible = "simple-bus";
+ 		ranges;

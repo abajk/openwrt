@@ -1,0 +1,49 @@
+From c0a824edb6bf694a2d5a9eede29e1628f093cb22 Mon Sep 17 00:00:00 2001
+From: Bryan Hinton <bryan@bryanhinton.com>
+Date: Sun, 21 Sep 2025 22:58:09 -0500
+Subject: [PATCH] arm64: dts: mediatek: mt7981b: add labels for UART0/1/2 nodes
+
+Add stable labels (uart0, uart1, uart2) to the MT7981B SoC UART nodes so
+board DTS files can reference them directly. This change is purely
+cosmetic and introduces no functional differences.
+
+Verification: Built dtbs and boot-tested mainline Image+DTB via U-Boot on
+MT7981B hardware; decompiled DT shows the uart0 label present and the
+serial0 alias (or absolute path) resolves to serial@11002000.
+
+Signed-off-by: Bryan Hinton <bryan@bryanhinton.com>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -94,7 +94,7 @@
+ 			#pwm-cells = <2>;
+ 		};
+ 
+-		serial@11002000 {
++		uart0: serial@11002000 {
+ 			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
+ 			reg = <0 0x11002000 0 0x100>;
+ 			interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
+@@ -105,7 +105,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		serial@11003000 {
++		uart1: serial@11003000 {
+ 			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
+ 			reg = <0 0x11003000 0 0x100>;
+ 			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
+@@ -116,7 +116,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		serial@11004000 {
++		uart2: serial@11004000 {
+ 			compatible = "mediatek,mt7981-uart", "mediatek,mt6577-uart";
+ 			reg = <0 0x11004000 0 0x100>;
+ 			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;

@@ -1,0 +1,118 @@
+From 9b2d2beaefcfa17259fdbce16d59d660894147cb Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@collabora.com>
+Date: Wed, 5 Nov 2025 22:17:57 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981b-openwrt-one: Enable software
+ leds
+
+The openwrt has 3 status leds at the front:
+* red: Used as failsafe led by openwrt
+* white: Used as boot led by openwrt
+* green: Used as running/upgrade led by openwrt
+
+On the back each RJ45 jack has the typical amber/green leds. For the WAN
+jack this is hardware controlled by the phy, for LAN these are under
+software control and enabled by this patch.
+
+Signed-off-by: Sjoerd Simons <sjoerd@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ .../boot/dts/mediatek/mt7981b-openwrt-one.dts | 59 +++++++++++++++++++
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi     |  2 +-
+ 2 files changed, 60 insertions(+), 1 deletion(-)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
++++ b/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
+@@ -3,6 +3,8 @@
+ /dts-v1/;
+ 
+ #include "mt7981b.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/leds/common.h>
+ #include "dt-bindings/pinctrl/mt65xx.h"
+ 
+ / {
+@@ -21,9 +23,60 @@
+ 		reg = <0 0x40000000 0 0x40000000>;
+ 		device_type = "memory";
+ 	};
++
++	pwm-leds {
++		compatible = "pwm-leds";
++
++		led-0 {
++			color = <LED_COLOR_ID_WHITE>;
++			default-brightness = <0>;
++			function = LED_FUNCTION_STATUS;
++			max-brightness = <255>;
++			pwms = <&pwm 0 10000>;
++		};
++
++		led-1 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-brightness = <0>;
++			function = LED_FUNCTION_STATUS;
++			max-brightness = <255>;
++			pwms = <&pwm 1 10000>;
++		};
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++
++		led-0 {
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_STATUS;
++			gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
++		};
++
++		led-1 {
++			color = <LED_COLOR_ID_AMBER>;
++			function = LED_FUNCTION_LAN;
++			gpios = <&pio 34 GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "netdev";
++		};
++
++		led-2 {
++			color = <LED_COLOR_ID_GREEN>;
++			function = LED_FUNCTION_LAN;
++			gpios = <&pio 35 GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "netdev";
++		};
++	};
+ };
+ 
+ &pio {
++	pwm_pins: pwm-pins {
++		mux {
++			function = "pwm";
++			groups = "pwm0_0", "pwm1_1";
++		};
++	};
++
+ 	spi2_flash_pins: spi2-pins {
+ 		mux {
+ 			function = "spi";
+@@ -44,6 +97,12 @@
+ 	};
+ };
+ 
++&pwm {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm_pins>;
++	status = "okay";
++};
++
+ &spi2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&spi2_flash_pins>;
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -94,7 +94,7 @@
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		pwm@10048000 {
++		pwm: pwm@10048000 {
+ 			compatible = "mediatek,mt7981-pwm";
+ 			reg = <0 0x10048000 0 0x1000>;
+ 			clocks = <&infracfg CLK_INFRA_PWM_STA>,

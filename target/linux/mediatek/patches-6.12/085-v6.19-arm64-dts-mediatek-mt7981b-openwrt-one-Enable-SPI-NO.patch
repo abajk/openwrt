@@ -1,0 +1,126 @@
+From 869b3bb5ada2b1632ad0372df5789f07ff53fa68 Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@collabora.com>
+Date: Wed, 5 Nov 2025 22:17:56 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981b-openwrt-one: Enable SPI NOR
+
+The openwrt one has a SPI NOR flash which from factory is used for:
+* Recovery system
+* WiFi eeprom data
+* ethernet Mac addresses
+
+Describe this following the same partitions as the openwrt configuration
+uses.
+
+Signed-off-by: Sjoerd Simons <sjoerd@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ .../boot/dts/mediatek/mt7981b-openwrt-one.dts | 79 +++++++++++++++++++
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi     |  2 +-
+ 2 files changed, 80 insertions(+), 1 deletion(-)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
++++ b/arch/arm64/boot/dts/mediatek/mt7981b-openwrt-one.dts
+@@ -3,6 +3,7 @@
+ /dts-v1/;
+ 
+ #include "mt7981b.dtsi"
++#include "dt-bindings/pinctrl/mt65xx.h"
+ 
+ / {
+ 	compatible = "openwrt,one", "mediatek,mt7981b";
+@@ -22,6 +23,84 @@
+ 	};
+ };
+ 
++&pio {
++	spi2_flash_pins: spi2-pins {
++		mux {
++			function = "spi";
++			groups = "spi2";
++		};
++
++		conf-pu {
++			bias-pull-up = <MTK_PUPD_SET_R1R0_11>;
++			drive-strength = <8>;
++			pins = "SPI2_CS", "SPI2_WP";
++		};
++
++		conf-pd {
++			bias-pull-down = <MTK_PUPD_SET_R1R0_11>;
++			drive-strength = <8>;
++			pins = "SPI2_CLK", "SPI2_MOSI", "SPI2_MISO";
++		};
++	};
++};
++
++&spi2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&spi2_flash_pins>;
++	status = "okay";
++
++	flash@0 {
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <40000000>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			partition@0 {
++				reg = <0x00000 0x40000>;
++				label = "bl2-nor";
++			};
++
++			partition@40000 {
++				reg = <0x40000 0xc0000>;
++				label = "factory";
++				read-only;
++
++				nvmem-layout {
++					compatible = "fixed-layout";
++					#address-cells = <1>;
++					#size-cells = <1>;
++
++					wifi_factory_calibration: eeprom@0 {
++						reg = <0x0 0x1000>;
++					};
++
++					wan_factory_mac: macaddr@24 {
++						reg = <0x24 0x6>;
++						compatible = "mac-base";
++						#nvmem-cell-cells = <1>;
++					};
++				};
++			};
++
++			partition@100000 {
++				reg = <0x100000 0x80000>;
++				label = "fip-nor";
++			};
++
++			partition@180000 {
++				reg = <0x180000 0xc80000>;
++				label = "recovery";
++			};
++		};
++	};
++};
++
+ &uart0 {
+ 	status = "okay";
+ };
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -156,7 +156,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		spi@11009000 {
++		spi2: spi@11009000 {
+ 			compatible = "mediatek,mt7981-spi-ipm", "mediatek,spi-ipm";
+ 			reg = <0 0x11009000 0 0x1000>;
+ 			interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>;

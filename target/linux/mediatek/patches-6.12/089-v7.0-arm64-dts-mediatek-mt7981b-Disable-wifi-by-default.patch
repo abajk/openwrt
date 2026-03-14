@@ -1,0 +1,28 @@
+From 46757ad083ce9a88ea157fe8b2b8f57d4db1801d Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@collabora.com>
+Date: Tue, 23 Dec 2025 13:37:56 +0100
+Subject: [PATCH] arm64: dts: mediatek: mt7981b: Disable wifi by default
+
+Disable the wifi block by default as it won't function properly without
+at least pin muxing.
+
+This doesn't enable wifi on any of the existing mt7981b devices as a
+required memory-region property is missing, causing the driver to fail
+probing anyway.
+
+Signed-off-by: Sjoerd Simons <sjoerd@collabora.com>
+Signed-off-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+ arch/arm64/boot/dts/mediatek/mt7981b.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
+@@ -493,6 +493,7 @@
+ 			clock-names = "mcu", "ap2conn";
+ 			resets = <&watchdog MT7986_TOPRGU_CONSYS_SW_RST>;
+ 			reset-names = "consys";
++			status = "disabled";
+ 		};
+ 	};
+ 
