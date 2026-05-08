@@ -1,0 +1,25 @@
+From 4d7dac43a7da54fded7725a1cd2f5c3fd37e4f76 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sat, 9 May 2026 16:02:07 +0200
+Subject: [PATCH] arm64: dts: mark dma as coherent
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ arch/arm64/boot/dts/marvell/armada-37xx.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+index 360fc24fdde2..8418777042b8 100644
+--- a/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
++++ b/arch/arm64/boot/dts/marvell/armada-37xx.dtsi
+@@ -437,6 +437,7 @@ crypto: crypto@90000 {
+ 				interrupt-names = "ring0", "ring1", "ring2",
+ 						  "ring3", "eip", "mem";
+ 				clocks = <&nb_periph_clk 15>;
++				dma-coherent;
+ 			};
+ 
+ 			rwtm: mailbox@b0000 {
+-- 
+2.53.0
+
