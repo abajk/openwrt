@@ -1,0 +1,188 @@
+From e4dee37dde14c8c52244ef52831e1bc844257272 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Wed, 13 May 2026 00:00:42 +0200
+Subject: [PATCH] debug
+
+---
+ drivers/crypto/inside-secure/safexcel.c      |   1 +
+ drivers/crypto/inside-secure/safexcel.h      |   1 +
+ drivers/crypto/inside-secure/safexcel_hash.c | 104 +++++++++++++++++--
+ 3 files changed, 96 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/crypto/inside-secure/safexcel.c b/drivers/crypto/inside-secure/safexcel.c
+index c3b2b22934b7..9ca80d082c4f 100644
+--- a/drivers/crypto/inside-secure/safexcel.c
++++ b/drivers/crypto/inside-secure/safexcel.c
+@@ -1218,6 +1218,7 @@ static struct safexcel_alg_template *safexcel_algs[] = {
+ 	&safexcel_alg_xts_aes,
+ 	&safexcel_alg_gcm,
+ 	&safexcel_alg_ccm,
++	&safexcel_alg_crc32,
+ 	&safexcel_alg_cbcmac,
+ 	&safexcel_alg_xcbcmac,
+ 	&safexcel_alg_cmac,
+diff --git a/drivers/crypto/inside-secure/safexcel.h b/drivers/crypto/inside-secure/safexcel.h
+index 0f27367a85fa..0c79ad78d1c0 100644
+--- a/drivers/crypto/inside-secure/safexcel.h
++++ b/drivers/crypto/inside-secure/safexcel.h
+@@ -959,6 +959,7 @@ extern struct safexcel_alg_template safexcel_alg_authenc_hmac_sha512_ctr_aes;
+ extern struct safexcel_alg_template safexcel_alg_xts_aes;
+ extern struct safexcel_alg_template safexcel_alg_gcm;
+ extern struct safexcel_alg_template safexcel_alg_ccm;
++extern struct safexcel_alg_template safexcel_alg_crc32;
+ extern struct safexcel_alg_template safexcel_alg_cbcmac;
+ extern struct safexcel_alg_template safexcel_alg_xcbcmac;
+ extern struct safexcel_alg_template safexcel_alg_cmac;
+diff --git a/drivers/crypto/inside-secure/safexcel_hash.c b/drivers/crypto/inside-secure/safexcel_hash.c
+index ef0ba4832928..e17577b785c3 100644
+--- a/drivers/crypto/inside-secure/safexcel_hash.c
++++ b/drivers/crypto/inside-secure/safexcel_hash.c
+@@ -249,9 +249,7 @@ static int safexcel_handle_req_result(struct safexcel_crypto_priv *priv,
+ 	safexcel_complete(priv, ring);
+ 
+ 	if (sreq->nents) {
+-		dma_unmap_sg(priv->dev, areq->src,
+-			     sg_nents_for_len(areq->src, areq->nbytes),
+-			     DMA_TO_DEVICE);
++		dma_unmap_sg(priv->dev, areq->src, sreq->nents, DMA_TO_DEVICE);
+ 		sreq->nents = 0;
+ 	}
+ 
+@@ -291,8 +289,14 @@ static int safexcel_handle_req_result(struct safexcel_crypto_priv *priv,
+ 			return 1;
+ 		}
+ 
+-		memcpy(areq->result, sreq->state,
+-		       crypto_ahash_digestsize(ahash));
++		if (unlikely(sreq->digest == CONTEXT_CONTROL_DIGEST_XCM &&
++			     ctx->alg == CONTEXT_CONTROL_CRYPTO_ALG_CRC32)) {
++			/* Undo final XOR with 0xffffffff ...*/
++			*(__le32 *)areq->result = ~sreq->state[0];
++		} else {
++			memcpy(areq->result, sreq->state,
++			       crypto_ahash_digestsize(ahash));
++		}
+ 	}
+ 
+ 	cache_len = safexcel_queued_len(sreq);
+@@ -493,9 +497,7 @@ static int safexcel_ahash_send_req(struct crypto_async_request *async, int ring,
+ 			 DMA_FROM_DEVICE);
+ unmap_sg:
+ 	if (req->nents) {
+-		dma_unmap_sg(priv->dev, areq->src,
+-			     sg_nents_for_len(areq->src, areq->nbytes),
+-			     DMA_TO_DEVICE);
++		dma_unmap_sg(priv->dev, areq->src, req->nents, DMA_TO_DEVICE);
+ 		req->nents = 0;
+ 	}
+ cdesc_rollback:
+@@ -1879,6 +1881,88 @@ struct safexcel_alg_template safexcel_alg_hmac_md5 = {
+ 	},
+ };
+ 
++static int safexcel_crc32_cra_init(struct crypto_tfm *tfm)
++{
++	struct safexcel_ahash_ctx *ctx = crypto_tfm_ctx(tfm);
++	int ret = safexcel_ahash_cra_init(tfm);
++
++	/* Default 'key' is all zeroes */
++	memset(&ctx->base.ipad, 0, sizeof(u32));
++	return ret;
++}
++
++static int safexcel_crc32_init(struct ahash_request *areq)
++{
++	struct safexcel_ahash_ctx *ctx = crypto_ahash_ctx(crypto_ahash_reqtfm(areq));
++	struct safexcel_ahash_req *req = ahash_request_ctx_dma(areq);
++
++	memset(req, 0, sizeof(*req));
++
++	/* Start from loaded key */
++	req->state[0]	= cpu_to_le32(~ctx->base.ipad.word[0]);
++	/* Set processed to non-zero to enable invalidation detection */
++	req->len	= sizeof(u32);
++	req->processed	= sizeof(u32);
++
++	ctx->alg = CONTEXT_CONTROL_CRYPTO_ALG_CRC32;
++	req->digest = CONTEXT_CONTROL_DIGEST_XCM;
++	req->state_sz = sizeof(u32);
++	req->digest_sz = sizeof(u32);
++	req->block_sz = sizeof(u32);
++
++	return 0;
++}
++
++static int safexcel_crc32_setkey(struct crypto_ahash *tfm, const u8 *key,
++				 unsigned int keylen)
++{
++	struct safexcel_ahash_ctx *ctx = crypto_tfm_ctx(crypto_ahash_tfm(tfm));
++
++	if (keylen != sizeof(u32))
++		return -EINVAL;
++
++	memcpy(&ctx->base.ipad, key, sizeof(u32));
++	return 0;
++}
++
++static int safexcel_crc32_digest(struct ahash_request *areq)
++{
++	return safexcel_crc32_init(areq) ?: safexcel_ahash_finup(areq);
++}
++
++struct safexcel_alg_template safexcel_alg_crc32 = {
++	.type = SAFEXCEL_ALG_TYPE_AHASH,
++	.algo_mask = 0,
++	.alg.ahash = {
++		.init = safexcel_crc32_init,
++		.update = safexcel_ahash_update,
++		.final = safexcel_ahash_final,
++		.finup = safexcel_ahash_finup,
++		.digest = safexcel_crc32_digest,
++		.setkey = safexcel_crc32_setkey,
++		.export = safexcel_ahash_export,
++		.import = safexcel_ahash_import,
++		.halg = {
++			.digestsize = sizeof(u32),
++			.statesize = sizeof(struct safexcel_ahash_export_state),
++			.base = {
++				.cra_name = "crc32",
++				.cra_driver_name = "safexcel-crc32",
++				.cra_priority = SAFEXCEL_CRA_PRIORITY,
++				.cra_flags = CRYPTO_ALG_OPTIONAL_KEY |
++					     CRYPTO_ALG_ASYNC |
++					     CRYPTO_ALG_ALLOCATES_MEMORY |
++					     CRYPTO_ALG_KERN_DRIVER_ONLY,
++				.cra_blocksize = 1,
++				.cra_ctxsize = sizeof(struct safexcel_ahash_ctx),
++				.cra_init = safexcel_crc32_cra_init,
++				.cra_exit = safexcel_ahash_cra_exit,
++				.cra_module = THIS_MODULE,
++			},
++		},
++	},
++};
++
+ static int safexcel_cbcmac_init(struct ahash_request *areq)
+ {
+ 	struct safexcel_ahash_ctx *ctx = crypto_ahash_ctx(crypto_ahash_reqtfm(areq));
+@@ -1959,7 +2043,7 @@ struct safexcel_alg_template safexcel_alg_cbcmac = {
+ 				.cra_flags = CRYPTO_ALG_ASYNC |
+ 					     CRYPTO_ALG_ALLOCATES_MEMORY |
+ 					     CRYPTO_ALG_KERN_DRIVER_ONLY,
+-				.cra_blocksize = AES_BLOCK_SIZE,
++				.cra_blocksize = 1,
+ 				.cra_ctxsize = sizeof(struct safexcel_ahash_ctx),
+ 				.cra_init = safexcel_ahash_cra_init,
+ 				.cra_exit = safexcel_ahash_cra_exit,
+@@ -2009,7 +2093,7 @@ static int safexcel_xcbcmac_cra_init(struct crypto_tfm *tfm)
+ 
+ 	safexcel_ahash_cra_init(tfm);
+ 	ctx->aes = kmalloc(sizeof(*ctx->aes), GFP_KERNEL);
+-	return ctx->aes == NULL ? -ENOMEM : 0;
++	return PTR_ERR_OR_ZERO(ctx->aes);
+ }
+ 
+ static void safexcel_xcbcmac_cra_exit(struct crypto_tfm *tfm)
+-- 
+2.53.0
+
