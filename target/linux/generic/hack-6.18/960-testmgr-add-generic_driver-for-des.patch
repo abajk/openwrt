@@ -1,0 +1,62 @@
+From 8d6dcc4979593b8d45113c90f78f3faa5f6de14e Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Fri, 15 May 2026 22:28:10 +0200
+Subject: [PATCH] testmgr: add generic_driver for des
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ crypto/testmgr.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 4d86efae65b2..ddf27527789c 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -4379,12 +4379,14 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		},
+ 	}, {
+ 		.alg = "cbc(des)",
++		.generic_driver = "cbc(des-generic)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des_cbc_tv_template)
+ 		},
+ 	}, {
+ 		.alg = "cbc(des3_ede)",
++		.generic_driver = "cbc(des3_ede-generic)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des3_ede_cbc_tv_template)
+@@ -4552,12 +4554,14 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		}
+ 	}, {
+ 		.alg = "ctr(des)",
++		.generic_driver = "ctr(des-generic)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des_ctr_tv_template)
+ 		}
+ 	}, {
+ 		.alg = "ctr(des3_ede)",
++		.generic_driver = "ctr(des3_ede-lib)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des3_ede_ctr_tv_template)
+@@ -4817,12 +4821,14 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.fips_allowed = 1,
+ 	}, {
+ 		.alg = "ecb(des)",
++		.generic_driver = "ecb(des-generic)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des_tv_template)
+ 		}
+ 	}, {
+ 		.alg = "ecb(des3_ede)",
++		.generic_driver = "ecb(des3_ede-generic)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+ 			.cipher = __VECS(des3_ede_tv_template)
+-- 
+2.53.0
+
