@@ -1,0 +1,27 @@
+From b7e4b1c88d25586862f013dd4aaff0f7909bfa7f Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 17 May 2026 23:15:56 +0200
+Subject: [PATCH 2/2] crypto: eip93 - Drop superfluous blank line
+
+No need for a blank line.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/crypto/inside-secure/eip93/eip93-main.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/crypto/inside-secure/eip93/eip93-main.c b/drivers/crypto/inside-secure/eip93/eip93-main.c
+index 276839e1a515..1a8dabc4ada4 100644
+--- a/drivers/crypto/inside-secure/eip93/eip93-main.c
++++ b/drivers/crypto/inside-secure/eip93/eip93-main.c
+@@ -441,7 +441,6 @@ static int eip93_crypto_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	ret = eip93_desc_init(eip93);
+-
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.53.0
+

@@ -1,0 +1,30 @@
+From e2b0d5d806b0651d44b3770197e1089846dd1943 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 17 May 2026 23:14:43 +0200
+Subject: [PATCH 1/2] crypto: eip93 - Add check for devm_request_threaded_irq
+
+As the potential failure of the devm_request_threaded_irq(),
+it should be better to check the return value and return
+error if fails.
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/crypto/inside-secure/eip93/eip93-main.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/crypto/inside-secure/eip93/eip93-main.c b/drivers/crypto/inside-secure/eip93/eip93-main.c
+index 7dccfdeb7b11..276839e1a515 100644
+--- a/drivers/crypto/inside-secure/eip93/eip93-main.c
++++ b/drivers/crypto/inside-secure/eip93/eip93-main.c
+@@ -433,6 +433,8 @@ static int eip93_crypto_probe(struct platform_device *pdev)
+ 	ret = devm_request_threaded_irq(eip93->dev, eip93->irq, eip93_irq_handler,
+ 					NULL, IRQF_ONESHOT,
+ 					dev_name(eip93->dev), eip93);
++	if (ret)
++		return ret;
+ 
+ 	eip93->ring = devm_kcalloc(eip93->dev, 1, sizeof(*eip93->ring), GFP_KERNEL);
+ 	if (!eip93->ring)
+-- 
+2.53.0
+
