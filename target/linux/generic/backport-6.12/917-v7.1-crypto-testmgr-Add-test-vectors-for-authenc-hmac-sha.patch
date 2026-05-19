@@ -18,12 +18,11 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
 --- a/crypto/testmgr.c
 +++ b/crypto/testmgr.c
-@@ -4452,8 +4452,12 @@ static const struct alg_test_desc alg_te
+@@ -4452,8 +4452,11 @@ static const struct alg_test_desc alg_te
  		}
  	}, {
  		.alg = "authenc(hmac(sha224),rfc3686(ctr(aes)))",
 -		.test = alg_test_null,
-+		.generic_driver = "authenc(hmac-sha224-lib,rfc3686(ctr(aes-generic)))",
 +		.test = alg_test_aead,
  		.fips_allowed = 1,
 +		.suite = {
