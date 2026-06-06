@@ -1,0 +1,262 @@
+From patchwork Fri Jun  5 05:30:56 2026
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Patchwork-Submitter: Petr Wozniak <petr.wozniak@gmail.com>
+X-Patchwork-Id: 14612584
+X-Patchwork-Delegate: kuba@kernel.org
+Received: from mail-wm1-f49.google.com (mail-wm1-f49.google.com
+ [209.85.128.49])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4C7851C5F27
+	for <netdev@vger.kernel.org>; Fri,  5 Jun 2026 05:31:01 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org;
+ arc=none smtp.client-ip=209.85.128.49
+ARC-Seal: i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
+	t=1780637462; cv=none;
+ b=RvoQt7iEaCrx3/bkerXDuiPHHEnwXtKa/uuucAkAK+YLgkhDcM+GDeXknQl/3ZEjjs8soOdp1eR8cW31yWr3uV8yPuG9qGS2iMur1tFszqF0kGEHYi7ymk7kYnQbyTA4NZZIENgh/G0AALlStGymEiAKFNh3lXjk9r6vMapRC4k=
+ARC-Message-Signature: i=1; a=rsa-sha256; d=subspace.kernel.org;
+	s=arc-20240116; t=1780637462; c=relaxed/simple;
+	bh=6KkI5MZZbDclc8igv7Jmkuhhc3G1Kn/GhoYh9WlzOFE=;
+	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
+	 MIME-Version:Content-Type;
+ b=Xw3GAJybbG3ErrW9Lgnhy+59Fc64tGzpRC5A7PK9eXlR6xJ2Q64avBL/ncPZIeUwSuF2+tdxGganwgwpLMP5oFEERNFvwIDA7lmwbShsZ5dP7Hb9Rp6wmjeuMp2xXK0+UqX6xDEX0EUwx0DLSomys8olGWqrkbo/ufyQmgckeog=
+ARC-Authentication-Results: i=1; smtp.subspace.kernel.org;
+ dmarc=pass (p=none dis=none) header.from=gmail.com;
+ spf=pass smtp.mailfrom=gmail.com;
+ dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com
+ header.b=MqihekrR; arc=none smtp.client-ip=209.85.128.49
+Authentication-Results: smtp.subspace.kernel.org;
+ dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org;
+ spf=pass smtp.mailfrom=gmail.com
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com
+ header.b="MqihekrR"
+Received: by mail-wm1-f49.google.com with SMTP id
+ 5b1f17b1804b1-490ace40f4bso17556675e9.3
+        for <netdev@vger.kernel.org>; Thu, 04 Jun 2026 22:31:01 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1780637460; x=1781242260;
+ darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=vuvdhqAuePBbJyQdMyyPcU8SDSteetKe1IJhuqarnPk=;
+        b=MqihekrRfuOfW+tty/TXvzHHBIvHlnPBGCae6Wz7T075FAfKXKQpZ+UOWZ7Z+Y54lF
+         RTe84Y+vlbk/HpOxclOUmMMvyfjgCA/l8LSgnGLLT6TrzUteFrplsOwCfGDnI7UybaNm
+         vSZSJrbwGJidcgzfW9yxmk+NKBc+awwEkGJbVq5eeriT0Y5BmEo4xXsZAZBmqlClj9JW
+         3JuPhFUEfpIIMAPhlT51FrTrLu8pbBH0M20M/W76CbLUxPe9bNXIDUU8iLg3FW5PDl1o
+         aj3K1Dsz/SUUiemvwH/4yIyuMOikb4Ta9GCs8w62TnpAXGgArRl0yRoLybD+NIciVL8C
+         N0Gw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1780637460; x=1781242260;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to;
+        bh=vuvdhqAuePBbJyQdMyyPcU8SDSteetKe1IJhuqarnPk=;
+        b=gq+qXEXw798F4x0WXSYVTeH4zOHg/9Z6CtHYvJqtEiabClfEy1L0utrL2/d6jmgo/D
+         C3FxnnbvOrFAWhGGPZRkRE7u3ZBBYTLb/FnkyboI6ZbFXSNeyBwqNiJV/9p+OIwe5GXs
+         fICw5UzZbjKmGi6iQzFTqBCl6J2iGubQYYFa/w6kRuIVw/g7XeWJcNqNtHr4rmUZWIYZ
+         csdfj0vcieBOzr39JRTgW+o+E69Dn9pFgq6AXNK9AScy4S8VrbuznQsqtoY638d+sbgu
+         u8IMtb16Svo7QbEGBKdE06g1Z00dFOhbHodaM73uNUd1ayeAzXRu96SvVm/evtmL5oPV
+         onCw==
+X-Gm-Message-State: AOJu0YwCjZj3zO2Qgg4cinwQPmvW3NeqlVSTbuq3d4J/ESkIB5LCysvP
+	aFtd9Bwc/QgGpyPSgsni9aS2GqK20rWyNnxKCuHHHoyq6QIkcwo6ZWnmh1IwjS6y
+X-Gm-Gg: Acq92OF5iQZYy+E8osE5QZfj8t/ETTqE1qAdVrteGgwq4HFBYZe0EUs/g1/Xp6iGNNT
+	5HcereGEO9PFoTmGQRinG5pRCSq21ODLG3e38F0ZDn3sMpQWOCTmB7epWrsnaUbudeg9hLX2tei
+	aI9joI59bpDdhW4yQdgAnX+kMTCwy5EZVvtu0t+jHvYi6QskfLzb0Jnb/Z28FGXQJwtkmVWUmjt
+	nTiKT4fW4wrSOi2UBxmQZB1UQOgZ9WHiu/57Lc1WiVj7qIJgQBpdFbRiqJNblIz4aybAicjAYFT
+	NFjL9lzGnVGtAX6Aa/ajic8qKRHSD5h2DzKhuDuRd9ysg/OFxA0DDU8sBLE+hujU86N7y11xXRz
+	px5sxzB9/hTW28pc9DdePL9VXAftF010KU3PC8x0rOJEz6Cc/GMGUFkBeQKwk3+ylEGNjO4h4Gd
+	4zixnzfE4tI0FJ2jHsPWJcmUl6D192e6sM2PcQc11eR7q8dQ5pPmr4FS02COQI4InbcQsdP7O7C
+	3H+BjoZJ2hwObdUuJhZHFqsTJUi
+X-Received: by 2002:a05:600c:4e09:b0:488:9bf8:7f17 with SMTP id
+ 5b1f17b1804b1-490c25acd18mr28114225e9.14.1780637459481;
+        Thu, 04 Jun 2026 22:30:59 -0700 (PDT)
+Received: from localhost.localdomain (ip-89-176-136-191.bb.vodafone.cz.
+ [89.176.136.191])
+        by smtp.gmail.com with ESMTPSA id
+ 5b1f17b1804b1-490bc413541sm128414495e9.14.2026.06.04.22.30.58
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 04 Jun 2026 22:30:59 -0700 (PDT)
+From: Petr Wozniak <petr.wozniak@gmail.com>
+To: netdev@vger.kernel.org
+Cc: kuba@kernel.org,
+	andrew@lunn.ch,
+	hkallweit1@gmail.com,
+	linux@armlinux.org.uk,
+	davem@davemloft.net,
+	edumazet@google.com,
+	pabeni@redhat.com,
+	linux-phy@lists.infradead.org,
+	linux-kernel@vger.kernel.org,
+	maxime.chevallier@bootlin.com,
+	bjorn@mork.no,
+	olek2@wp.pl,
+	Petr Wozniak <petr.wozniak@gmail.com>
+Subject: [PATCH v2 net-next] net: phy: mdio-i2c: defer RollBall bridge probe
+ to PHY discovery
+Date: Fri,  5 Jun 2026 07:30:56 +0200
+Message-ID: <20260605053056.1977-1-petr.wozniak@gmail.com>
+X-Mailer: git-send-email 2.50.1
+In-Reply-To: <20260604181207.17468-1-petr.wozniak@gmail.com>
+References: <20260604181207.17468-1-petr.wozniak@gmail.com>
+Precedence: bulk
+X-Mailing-List: netdev@vger.kernel.org
+List-Id: <netdev.vger.kernel.org>
+List-Subscribe: <mailto:netdev+subscribe@vger.kernel.org>
+List-Unsubscribe: <mailto:netdev+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+X-Patchwork-Delegate: kuba@kernel.org
+
+commit 8fe125892f40 ("net: phy: sfp: probe for RollBall I2C-to-MDIO
+bridge in mdio-i2c") introduced a regression: the RollBall I2C-to-MDIO
+bridge is not yet ready to respond to CMD_READ/CMD_DONE cycles when
+sfp_sm_add_mdio_bus() runs in SFP_S_INIT.  The 200 ms probe times out,
+i2c_mii_probe_rollball() returns -ENODEV, and sfp_sm_add_mdio_bus()
+sets mdio_protocol = MDIO_I2C_NONE.  By the time sfp_sm_probe_for_phy()
+runs (up to ~17 s later on affected hardware), the bridge is fully
+initialized — but PHY probing is skipped because the protocol has
+already been changed to NONE.
+
+This affects both modules inserted before boot and hotplugged modules on
+hardware where bridge initialization exceeds the 200 ms probe window
+(confirmed: FLYPRO SFP-10GT-CS-30M with Aquantia AQR113C, hotplugged).
+
+Move the probe from i2c_mii_init_rollball() — called at bus-creation
+time — to sfp_sm_probe_for_phy() in sfp.c, where it runs after the SFP
+state machine's module initialization delays.  Export the probe function
+as mdio_i2c_probe_rollball() so sfp.c can call it.
+
+For RTL8261BE-based modules: the probe correctly returns -ENODEV at PHY
+discovery time, causing sfp_sm_probe_for_phy() to destroy the MDIO bus
+and set MDIO_I2C_NONE — eliminating the 5+ minute PHY probe retry loop.
+
+For genuine RollBall modules (e.g. FLYPRO SFP-10GT-CS-30M with Aquantia
+AQR113C): the probe now runs after initialization is complete and
+correctly returns 0 — PHY detection proceeds normally.
+
+Reported-by: Aleksander Bajkowski <olek2@wp.pl>
+Fixes: 8fe125892f40 ("net: phy: sfp: probe for RollBall I2C-to-MDIO bridge in mdio-i2c")
+Signed-off-by: Petr Wozniak <petr.wozniak@gmail.com>
+---
+Changes in v2:
+ - Generalize scope: regression affects both boot-inserted and hotplugged
+   modules on hardware where bridge init exceeds 200 ms; Aleksander
+   Bajkowski confirmed FLYPRO SFP-10GT-CS-30M / AQR113C broken even
+   when hotplugged
+ - Correct state machine description: probe runs in SFP_S_INIT (which
+   follows SFP_S_WAIT), not "before initialization delays" (Jan Hoffmann)
+ - No code changes from v1
+
+ drivers/net/mdio/mdio-i2c.c   | 18 ++++--------------
+ drivers/net/phy/sfp.c         | 18 ++++++++++++------
+ include/linux/mdio/mdio-i2c.h |  1 +
+ 3 files changed, 17 insertions(+), 20 deletions(-)
+
+--
+2.51.0
+
+diff --git a/drivers/net/mdio/mdio-i2c.c b/drivers/net/mdio/mdio-i2c.c
+--- a/drivers/net/mdio/mdio-i2c.c
++++ b/drivers/net/mdio/mdio-i2c.c
+@@ -352,7 +352,7 @@
+ 	return 0;
+ }
+
+-static int i2c_mii_probe_rollball(struct i2c_adapter *i2c)
++int mdio_i2c_probe_rollball(struct i2c_adapter *i2c)
+ {
+ 	u8 data_buf[] = { ROLLBALL_DATA_ADDR, 0x01, 0x00, 0x00 };
+ 	u8 cmd_buf[]  = { ROLLBALL_CMD_ADDR, ROLLBALL_CMD_READ };
+@@ -397,9 +397,12 @@
+
+ 	return -ENODEV;
+ }
++EXPORT_SYMBOL_GPL(mdio_i2c_probe_rollball);
+
+ static int i2c_mii_init_rollball(struct i2c_adapter *i2c)
+ {
++	/* Send the RollBall unlock password; bridge presence is verified
++	 * later, in sfp_sm_probe_for_phy(), after module initialization. */
+ 	struct i2c_msg msg;
+ 	u8 pw[5];
+ 	int ret;
+@@ -419,7 +421,7 @@
+ 	if (ret != 1)
+ 		return -EIO;
+
+-	return i2c_mii_probe_rollball(i2c);
++	return 0;
+ }
+
+ struct mii_bus *mdio_i2c_alloc(struct device *parent, struct i2c_adapter *i2c,
+@@ -444,12 +446,9 @@
+ 	case MDIO_I2C_ROLLBALL:
+ 		ret = i2c_mii_init_rollball(i2c);
+ 		if (ret < 0) {
+-			if (ret != -ENODEV)
+-				dev_err(parent,
+-					"Cannot initialize RollBall MDIO I2C protocol: %d\n",
+-					ret);
+-			/* -ENODEV propagates to caller: no bridge present,
+-			 * PHY probing should be skipped for this module. */
++			dev_err(parent,
++				"Cannot initialize RollBall MDIO I2C protocol: %d\n",
++				ret);
+ 			mdiobus_free(mii);
+ 			return ERR_PTR(ret);
+ 		}
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -2028,18 +2028,10 @@ static int sfp_sm_add_mdio_bus(struct sfp *sfp)
+ 	dev_info(sfp->dev, "probing phy device through the [%s] protocol\n",
+ 		 mdio_i2c_proto_type(sfp->mdio_protocol));
+
+-	int ret;
+-
+ 	if (sfp->mdio_protocol == MDIO_I2C_NONE)
+ 		return 0;
+
+-	ret = sfp_i2c_mdiobus_create(sfp);
+-	if (ret == -ENODEV) {
+-		/* Probe confirmed no bridge present; skip PHY discovery. */
+-		sfp->mdio_protocol = MDIO_I2C_NONE;
+-		return 0;
+-	}
+-	return ret;
++	return sfp_i2c_mdiobus_create(sfp);
+ }
+
+ /* Probe a SFP for a PHY device if the module supports copper - the PHY
+@@ -2058,6 +2049,16 @@ static int sfp_sm_probe_for_phy(struct sfp *sfp)
+
+ 	case MDIO_I2C_ROLLBALL:
+-		err = sfp_sm_probe_phy(sfp, SFP_PHY_ADDR_ROLLBALL, true);
++		/* Probe here, after module initialization delays, so that
++		 * genuine RollBall bridges have had time to start up.
++		 * Modules without a bridge (e.g. RTL8261BE) return -ENODEV. */
++		err = mdio_i2c_probe_rollball(sfp->i2c);
++		if (err == -ENODEV) {
++			sfp_i2c_mdiobus_destroy(sfp);
++			sfp->mdio_protocol = MDIO_I2C_NONE;
++			break;
++		}
++		if (!err)
++			err = sfp_sm_probe_phy(sfp, SFP_PHY_ADDR_ROLLBALL, true);
+ 		break;
+ 	}
+ 
+diff --git a/include/linux/mdio/mdio-i2c.h b/include/linux/mdio/mdio-i2c.h
+--- a/include/linux/mdio/mdio-i2c.h
++++ b/include/linux/mdio/mdio-i2c.h
+@@ -33,5 +33,6 @@
+
+ struct mii_bus *mdio_i2c_alloc(struct device *parent, struct i2c_adapter *i2c,
+ 			       enum mdio_i2c_proto protocol);
++int mdio_i2c_probe_rollball(struct i2c_adapter *i2c);
+
+ #endif
