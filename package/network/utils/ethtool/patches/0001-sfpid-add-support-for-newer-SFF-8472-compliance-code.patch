@@ -1,0 +1,63 @@
+From 23abb606dc64efe46c756779cad38edf28e00c46 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Thu, 4 Jun 2026 00:05:19 +0200
+Subject: [PATCH 1/2] sfpid: add support for newer SFF-8472 compliance codes
+
+This change adds support for newer compliance codes defined in
+SFF-8472.
+
+Standards for SFF-8472
+a) SFF_8472 Rev 12.5a dated Jan 16, 2026
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ sfpid.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/sfpid.c b/sfpid.c
+index 228b3ee..4c2d750 100644
+--- a/sfpid.c
++++ b/sfpid.c
+@@ -63,6 +63,9 @@ static void sff8079_show_transceiver(const __u8 *id)
+ 		print_uint(PRINT_JSON, NULL, "%u", id[9]);
+ 		print_uint(PRINT_JSON, NULL, "%u", id[10]);
+ 		print_uint(PRINT_JSON, NULL, "%u", id[36]);
++		if (id[10] & (1 << 1)) {
++			print_uint(PRINT_JSON, NULL, "%u", id[62]);
++		}
+ 		close_json_array("");
+ 	} else {
+ 		printf("\t%-41s : 0x%02x 0x%02x 0x%02x " \
+@@ -73,7 +76,7 @@ static void sff8079_show_transceiver(const __u8 *id)
+ 	/* 10G Ethernet Compliance Codes */
+ 	if (id[3] & (1 << 7))
+ 		sprintf(value, "%s",
+-			"10G Ethernet: 10G Base-LRM [SFF-8472 rev10.4 onwards]");
++			"10G Ethernet: 10G Base-ER [SFF-8472 rev10.4 onwards]");
+ 	if (id[3] & (1 << 6))
+ 		sprintf(value, "%s", "10G Ethernet: 10G Base-LRM");
+ 	if (id[3] & (1 << 5))
+@@ -188,12 +191,20 @@ static void sff8079_show_transceiver(const __u8 *id)
+ 		sprintf(value, "%s", "FC: 1200 MBytes/sec");
+ 	if (id[10] & (1 << 6))
+ 		sprintf(value, "%s", "FC: 800 MBytes/sec");
++	if (id[10] & (1 << 5))
++		sprintf(value, "%s", "FC: 1600 MBytes/sec");
+ 	if (id[10] & (1 << 4))
+ 		sprintf(value, "%s", "FC: 400 MBytes/sec");
++	if (id[10] & (1 << 3))
++		sprintf(value, "%s", "FC: 3200 MBytes/sec");
+ 	if (id[10] & (1 << 2))
+ 		sprintf(value, "%s", "FC: 200 MBytes/sec");
+ 	if (id[10] & (1 << 0))
+ 		sprintf(value, "%s", "FC: 100 MBytes/sec");
++	if (id[10] & (1 << 1)) {
++		if (id[62] & (1 << 0))
++			sprintf(value, "%s", "FC: 64GFC");
++	}
+ 	/* Extended Specification Compliance Codes from SFF-8024 */
+ 	if (id[36] == 0x1)
+ 		sprintf(value, "%s",
+-- 
+2.53.0
+
