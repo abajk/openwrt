@@ -1,4 +1,4 @@
-From 23abb606dc64efe46c756779cad38edf28e00c46 Mon Sep 17 00:00:00 2001
+From 7777ab2746c3f8c53423d5b5cd11c0c6195d9673 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Thu, 4 Jun 2026 00:05:19 +0200
 Subject: [PATCH 1/2] sfpid: add support for newer SFF-8472 compliance codes
@@ -11,24 +11,31 @@ a) SFF_8472 Rev 12.5a dated Jan 16, 2026
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- sfpid.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ sfpid.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/sfpid.c b/sfpid.c
-index 228b3ee..4c2d750 100644
+index 228b3ee..948d932 100644
 --- a/sfpid.c
 +++ b/sfpid.c
-@@ -63,6 +63,9 @@ static void sff8079_show_transceiver(const __u8 *id)
+@@ -63,17 +63,23 @@ static void sff8079_show_transceiver(const __u8 *id)
  		print_uint(PRINT_JSON, NULL, "%u", id[9]);
  		print_uint(PRINT_JSON, NULL, "%u", id[10]);
  		print_uint(PRINT_JSON, NULL, "%u", id[36]);
-+		if (id[10] & (1 << 1)) {
++		if (id[10] & (1 << 1))
 +			print_uint(PRINT_JSON, NULL, "%u", id[62]);
-+		}
  		close_json_array("");
  	} else {
  		printf("\t%-41s : 0x%02x 0x%02x 0x%02x " \
-@@ -73,7 +76,7 @@ static void sff8079_show_transceiver(const __u8 *id)
+-		       "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
++		       "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+ 		       "Transceiver codes", id[3], id[4], id[5], id[6],
+ 		       id[7], id[8], id[9], id[10], id[36]);
++		if (id[10] & (1 << 1))
++			printf(" 0x%02x\n", id[62]);
++		else
++			printf("\n");
+ 	}
  	/* 10G Ethernet Compliance Codes */
  	if (id[3] & (1 << 7))
  		sprintf(value, "%s",
@@ -37,7 +44,7 @@ index 228b3ee..4c2d750 100644
  	if (id[3] & (1 << 6))
  		sprintf(value, "%s", "10G Ethernet: 10G Base-LRM");
  	if (id[3] & (1 << 5))
-@@ -188,12 +191,20 @@ static void sff8079_show_transceiver(const __u8 *id)
+@@ -188,12 +194,20 @@ static void sff8079_show_transceiver(const __u8 *id)
  		sprintf(value, "%s", "FC: 1200 MBytes/sec");
  	if (id[10] & (1 << 6))
  		sprintf(value, "%s", "FC: 800 MBytes/sec");
