@@ -1,0 +1,25 @@
+From e53c151e29730d95a7762ca668a0ccbe820f76cd Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Thu, 4 Jun 2026 16:11:36 +0200
+Subject: [PATCH] net: sfp: add quirk for Yeson SFP+-T30
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ drivers/net/phy/sfp.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+index b94b9c433a21..6b5f703f9549 100644
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -589,6 +589,7 @@ static const struct sfp_quirk sfp_quirks[] = {
+ 	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
+ 	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
+ 
++	SFP_QUIRK_F("YESON", "SFP+-T30", sfp_fixup_rollball_cc),
+ 	SFP_QUIRK_S("ZOERAX", "SFP-2.5G-T", sfp_quirk_oem_2_5g),
+ };
+ 
+-- 
+2.53.0
+
