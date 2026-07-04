@@ -1,0 +1,151 @@
+From dfcd614bb729a3675c3f0a3cd86d53a83d61af2c Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Fri, 3 Jul 2026 22:03:10 +0200
+Subject: [PATCH 1/3] sfpid: print all implemented options
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+SFP modules implement multiple options. Before the “json” option was
+introduced, all options were listed. Currently, only the last option
+is listed. This commit fixes this bug. Options are represented as array.
+
+Before:
+$ ethtool -m sfp-wan
+...
+	Option values                             : 0x00 0x32
+	Option                                    : RATE_SELECT implemented
+...
+$ ethtool --json -m sfp-wan
+[ {
+...
+        "option_values": [ 0,50 ],
+        "option": "RATE_SELECT implemented",
+...
+    } ]
+
+After:
+$ ethtool -m sfp-wan
+...
+	Option values                             : 0x00 0x32
+	Option                                    : RX_LOS implemented
+	Option                                    : TX_DISABLE implemented
+	Option                                    : RATE_SELECT implemented
+...
+$ ethtool --json -m sfp-wan
+[ {
+...
+        "option_values": [ 0,50 ],
+        "option": [ "RX_LOS implemented","TX_DISABLE implemented","RATE_SELECT implemented" ],
+...
+    } ]
+
+Fixes: 4071862f58d8 ("sfpid: Add JSON output handling to --module-info in SFF8079 modules")
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ module-common.c |  8 ++++++++
+ module-common.h |  1 +
+ sfpid.c         | 35 +++++++++++++++++++----------------
+ 3 files changed, 28 insertions(+), 16 deletions(-)
+
+diff --git a/module-common.c b/module-common.c
+index 42fccf6..43ff649 100644
+--- a/module-common.c
++++ b/module-common.c
+@@ -258,6 +258,14 @@ void module_print_any_bool(const char *fn, char *given_json_fn, bool value,
+ 		printf("\t%-41s : %s\n", fn, str_value);
+ }
+ 
++void module_print_any_array_string_entry(const char *fn, const char *value)
++{
++	if (is_json_context())
++		print_string(PRINT_JSON, NULL, "%s", value);
++	else
++		printf("\t%-41s : %s\n", fn, value);
++}
++
+ void module_show_value_with_unit(const __u8 *id, unsigned int reg,
+ 				 const char *name, unsigned int mult,
+ 				 const char *unit)
+diff --git a/module-common.h b/module-common.h
+index 4063448..f3baf2a 100644
+--- a/module-common.h
++++ b/module-common.h
+@@ -281,6 +281,7 @@ void module_print_any_string(const char *fn, const char *value);
+ void module_print_any_float(const char *fn, float value, const char *unit);
+ void module_print_any_bool(const char *fn, char *given_json_fn, bool value,
+ 			   const char *str_value);
++void module_print_any_array_string_entry(const char *fn, const char *value);
+ void module_show_value_with_unit(const __u8 *id, unsigned int reg,
+ 				 const char *name, unsigned int mult,
+ 				 const char *unit);
+diff --git a/sfpid.c b/sfpid.c
+index 74a6f51..5899f8c 100644
+--- a/sfpid.c
++++ b/sfpid.c
+@@ -396,7 +396,6 @@ static void sff8079_show_wavelength_or_copper_compliance(const __u8 *id)
+ static void sff8079_show_options(const __u8 *id)
+ {
+ 	static const char *pfx = "Option";
+-	char value[64] = "";
+ 
+ 	if (is_json_context()) {
+ 		open_json_array("option_values", "");
+@@ -407,35 +406,39 @@ static void sff8079_show_options(const __u8 *id)
+ 		printf("\t%-41s : 0x%02x 0x%02x\n", "Option values", id[64],
+ 		       id[65]);
+ 	}
++
++	if (is_json_context())
++		open_json_array("option", "");
++
+ 	if (id[65] & (1 << 1))
+-		sprintf(value, "%s", "RX_LOS implemented");
++		module_print_any_array_string_entry(pfx, "RX_LOS implemented");
+ 	if (id[65] & (1 << 2))
+-		sprintf(value, "%s", "RX_LOS implemented, inverted");
++		module_print_any_array_string_entry(pfx, "RX_LOS implemented, inverted");
+ 	if (id[65] & (1 << 3))
+-		sprintf(value, "%s", "TX_FAULT implemented");
++		module_print_any_array_string_entry(pfx, "TX_FAULT implemented");
+ 	if (id[65] & (1 << 4))
+-		sprintf(value, "%s", "TX_DISABLE implemented");
++		module_print_any_array_string_entry(pfx, "TX_DISABLE implemented");
+ 	if (id[65] & (1 << 5))
+-		sprintf(value, "%s", "RATE_SELECT implemented");
++		module_print_any_array_string_entry(pfx, "RATE_SELECT implemented");
+ 	if (id[65] & (1 << 6))
+-		sprintf(value, "%s", "Tunable transmitter technology");
++		module_print_any_array_string_entry(pfx, "Tunable transmitter technology");
+ 	if (id[65] & (1 << 7))
+-		sprintf(value, "%s", "Receiver decision threshold implemented");
++		module_print_any_array_string_entry(pfx, "Receiver decision threshold implemented");
+ 	if (id[64] & (1 << 0))
+-		sprintf(value, "%s", "Linear receiver output implemented");
++		module_print_any_array_string_entry(pfx, "Linear receiver output implemented");
+ 	if (id[64] & (1 << 1))
+-		sprintf(value, "%s", "Power level 2 requirement");
++		module_print_any_array_string_entry(pfx, "Power level 2 requirement");
+ 	if (id[64] & (1 << 2))
+-		sprintf(value, "%s", "Cooled transceiver implemented");
++		module_print_any_array_string_entry(pfx, "Cooled transceiver implemented");
+ 	if (id[64] & (1 << 3))
+-		sprintf(value, "%s", "Retimer or CDR implemented");
++		module_print_any_array_string_entry(pfx, "Retimer or CDR implemented");
+ 	if (id[64] & (1 << 4))
+-		sprintf(value, "%s", "Paging implemented");
++		module_print_any_array_string_entry(pfx, "Paging implemented");
+ 	if (id[64] & (1 << 5))
+-		sprintf(value, "%s", "Power level 3 requirement");
++		module_print_any_array_string_entry(pfx, "Power level 3 requirement");
+ 
+-	if (value[0] != '\0')
+-		module_print_any_string(pfx, value);
++	if (is_json_context())
++		close_json_array("");
+ }
+ 
+ static void sff8079_show_all_common(const __u8 *id)
+-- 
+2.53.0
+
