@@ -55,15 +55,15 @@
 		reset-gpios = <&gpio 44 GPIO_ACTIVE_LOW>;
 		reg = <0>;
 
-		dsa,member = <1 0>;
+		dsa,member = <0 1>;
 
 		ports {
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			port@0 {
+			sw0p0: port@0 {
 				reg = <0>;
-				ethernet = <&rgmii0>;
+				link = <&rgmii0>;
 				phy-mode = "rgmii-txid";
 				tx-internal-delay-ps = <3000>;
 
@@ -113,7 +113,7 @@
 
 	rgmii0: port@1 {
 		reg = <1>;
-		label = "sw0";
+		link = <&sw0p0>;
 		phy-mode = "rgmii";
 
 		fixed-link {
