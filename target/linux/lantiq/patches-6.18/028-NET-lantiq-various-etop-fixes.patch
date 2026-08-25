@@ -98,7 +98,7 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +#define LTQ_GBIT_MDIO_DATA	0xd0
 +#define LTQ_GBIT_GCTL0		0x68
 +#define LTQ_GBIT_PMAC_HD_CTL	0x8c
-+#define LTQ_GBIT_P0_CTL		0x4
++#define LTQ_GBIT_P1_CTL		0x8
 +#define LTQ_GBIT_PMAC_RX_IPG	0xa8
 +#define LTQ_GBIT_RGMII_CTL	0x78
 +
@@ -307,11 +307,11 @@ Signed-off-by: John Crispin <blogic@openwrt.org>
 +	clk_enable(priv->clk_switch);
 +
 +	/* enable gbit port0 on the SoC */
-+	ltq_gbit_w32_mask((1 << 17), (1 << 18), LTQ_GBIT_P0_CTL);
++	ltq_gbit_w32_mask((1 << 17), (1 << 18), LTQ_GBIT_P1_CTL);
 +
 +	ltq_gbit_w32_mask(0, GCTL0_SE, LTQ_GBIT_GCTL0);
 +	/* disable MDIO auto polling mode */
-+	ltq_gbit_w32_mask(0, PX_CTL_DMDIO, LTQ_GBIT_P0_CTL);
++	ltq_gbit_w32_mask(0, PX_CTL_DMDIO, LTQ_GBIT_P1_CTL);
 +	/* set 1522 packet size */
 +	ltq_gbit_w32_mask(0x300, 0, LTQ_GBIT_GCTL0);
 +	/* disable pmac & dmac headers */
