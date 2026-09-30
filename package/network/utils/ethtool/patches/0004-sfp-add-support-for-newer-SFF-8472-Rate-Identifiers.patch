@@ -1,0 +1,52 @@
+From 60bbe72dbd4ddb0c825cc61d16cf349af51f0c26 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Tue, 29 Sep 2026 17:31:39 +0200
+Subject: [PATCH] sfp: add support for newer SFF-8472 Rate Identifiers
+
+This change adds support for newer rate identifiers defined in
+SFF-8472.
+
+Standards for SFF-8472
+a) SFF_8472 Rev 12.5a dated Jan 16, 2026
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ sfpid.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/sfpid.c b/sfpid.c
+index 065ac4c..994da7e 100644
+--- a/sfpid.c
++++ b/sfpid.c
+@@ -331,12 +331,28 @@ static void sff8079_show_rate_identifier(const __u8 *id)
+ 		sprintf(description, "%s", "8/4/2G Rx Rate_Select only");
+ 		break;
+ 	case 0x03:
++	case 0x06:
+ 		sprintf(description, "%s",
+ 			"8/4/2G Independent Rx & Tx Rate_Select");
+ 		break;
+ 	case 0x04:
+ 		sprintf(description, "%s", "8/4/2G Tx Rate_Select only");
+ 		break;
++	case 0x08:
++		sprintf(description, "%s", "16/8/4G Rx Rate_Select only");
++		break;
++	case 0x0a:
++		sprintf(description, "%s",
++			"16/8/4G Independent Rx & Tx Rate_Select");
++		break;
++	case 0x0c:
++		sprintf(description, "%s",
++			"32/16/8G Independent Rx & Tx Rate_Select");
++		break;
++	case 0x10:
++		sprintf(description, "%s",
++			"64/32/16G Independent Rx & Tx Rate_Select");
++		break;
+ 	default:
+ 		sprintf(description, "%s", "reserved or unknown");
+ 		break;
+-- 
+2.53.0
+
