@@ -1,0 +1,24 @@
+From cf5b24caa18ab1e505c560782aff27579520a949 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Wed, 14 Oct 2026 23:38:42 +0200
+Subject: [PATCH] test
+
+---
+ drivers/net/dsa/mv88e6xxx/chip.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/dsa/mv88e6xxx/chip.c b/drivers/net/dsa/mv88e6xxx/chip.c
+index a4a8c7e11bf4..dfc3ee567ca5 100644
+--- a/drivers/net/dsa/mv88e6xxx/chip.c
++++ b/drivers/net/dsa/mv88e6xxx/chip.c
+@@ -4608,6 +4608,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
+ 	.port_pause_limit = mv88e6097_port_pause_limit,
+ 	.port_disable_learn_limit = mv88e6xxx_port_disable_learn_limit,
+ 	.port_disable_pri_override = mv88e6xxx_port_disable_pri_override,
++	.port_setup_leds = mv88e6xxx_port_setup_leds,
+ 	.port_get_cmode = mv88e6352_port_get_cmode,
+ 	.port_setup_message_port = mv88e6xxx_setup_message_port,
+ 	.stats_snapshot = mv88e6320_g1_stats_snapshot,
+-- 
+2.53.0
+
