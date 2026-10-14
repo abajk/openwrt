@@ -22,6 +22,15 @@ extreme-networks,ws-ap3825i)
 hpe,msm460)
 	ucidef_set_led_netdev "lan" "LAN" "green:lan" "eth0"
 	;;
+watchguard,xtm330)
+	ucidef_set_led_netdev "port0" "port0" "Marvell 88E6171:00:02:green:lan" "port0" "link_100"
+	ucidef_set_led_netdev "port1" "port1" "Marvell 88E6171:01:02:green:lan" "port1" "link_100"
+	ucidef_set_led_netdev "port2" "port2" "Marvell 88E6171:02:02:green:lan" "port2" "link_100"
+	ucidef_set_led_netdev "port3" "port3" "Marvell 88E6171:03:02:green:lan" "port3" "link_100"
+	ucidef_set_led_netdev "port4" "port4" "Marvell 88E6171:01:02:green:lan-2" "port4" "link_100"
+	ucidef_set_led_netdev "port5" "port5" "Marvell 88E6171:02:02:green:lan-2" "port5" "link_100"
+	ucidef_set_led_netdev "port6" "port6" "Marvell 88E6171:03:02:green:lan-2" "port6" "link_100"
+	;;
 esac
 
 board_config_flush
